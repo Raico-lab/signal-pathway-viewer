@@ -1,0 +1,94 @@
+study,file,conditions,treat,control,sign,label
+Gasch_2000_PMID_11102521,2010.Gasch00_HS25-37.flt.knn.avg.pcl,heat,heat shock (10|15|20) min,,1,熱ショック 25→37℃（10〜20 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_HSto37.flt.knn.avg.pcl,heat,heat shock (17|21|25|29) to 37,,1,熱ショック 17〜29→37℃（20 分）
+Causton_2001_PMID_11179418,2010.Causton01_heat.filter.flt.knn.avg.div.log.pcl,heat,^Heat (15|30)',^Heat 0',1,熱ショック（15〜30 分）
+Berry_2008_PMID_18753408,GSE8335_set07_family.pcl,heat,BY4741 Heat 15 min,,1,熱ショック（15 分）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,heat,^heatshock \(20min\) - WT 42C / WT$,,1,熱ショック 42℃（20 分）
+Alejandro-Osorio_2009_PMID_19470158,GSE9108.final.pcl,heat,^HS[12]_wt_(10|15|20|30) min$,,1,熱ショック（10〜30 分）
+O'Duibhir_2014_PMID_24952590,GSE54528.remapped.final.pcl,heat,^wt-37C-t(15|30)-,^wt-30C-t(15|30)-,1,熱ショック 37℃（15〜30 分。対照は 30℃ の同じ時点）
+Oromendia_2012_PMID_23222101,GSE40073_final.pcl,heat,^WT (15|30) Min heatshock,^WT 0 Min heatshock,1,熱ショック（15〜30 分）
+Levy_2007_PMID_17327914,GSE6302_set02_family.pcl,heat,\(0\.25 hours\),\(-0\.27 hours\),1,熱ショック（グルコース制限のケモスタット、15 分）
+Tai_2007_PMID_17928405,GSE6190.final.pcl,cold,^12C.*C-(lim|im)\b,^30C.*C-lim\b,1,12℃ での定常の増殖（炭素制限ケモスタット。対照は 30℃）
+Abe_2007_PMID_17910955,GSE9136.final.pcl,cold,"0\.1MPa, 15C","0\.1MPa, 24C",1,15℃（対照は 24℃）
+Gasch_2000_PMID_11102521,2010.Gasch00_hyper-osmotic.flt.knn.avg.pcl,osmotic,1M sorbitol - (15|30) min,,1,1 M ソルビトール（15〜30 分）
+Causton_2001_PMID_11179418,2010.Causton01_NaCl.filter.flt.knn.avg.div.log.pcl,osmotic,^NaCl (15|30)',^NaCl 0',1,NaCl（15〜30 分）
+Causton_2001_PMID_11179418,2010.Causton01_sorbitol.filter.flt.knn.avg.div.log.pcl,osmotic,^Sorbitol (15|30)',^Sorbitol 0',1,ソルビトール（15〜30 分）
+Berry_2008_PMID_18753408,GSE8335_set06_family.pcl,osmotic,NaCl 45 min,,1,NaCl（45 分）
+O'Rourke_2004_PMID_14595107,2010.ORourke03.flt.knn.avg.pcl,osmotic,^ORourke03_WT_0\.5MKCl_0(10|20|30)$,^ORourke03_WT_0\.5MKCl_0$,1,0.5 M KCl（10〜30 分）
+O'Rourke_2004_PMID_14595107,2010.ORourke03.flt.knn.avg.pcl,osmotic,^ORourke03_WT_1Msorb_0(10|20|30)$,^ORourke03_WT_1Msorb_0$,1,1 M ソルビトール（10〜30 分）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,osmotic,^osmotic stress \(20min\) - WT SD \+KCL,,1,KCl（20 分）
+Alejandro-Osorio_2009_PMID_19470158,GSE9108.final.pcl,osmotic,^NaCl1_wt_(15|30) min$,,1,NaCl（15〜30 分）
+Merrill_2014_PMID_24938287,GSE53549.final.pcl,osmotic,WT-t0_vs_WT-t(30|60)min,,1,0.7 M NaCl（30〜60 分）
+Oeser_2016_PMID_26800527,GSE57476.mapped.pcl,osmotic,"^WT, rep A, (30|60)min vs\. WT, rep A, 0min$",,1,高浸透圧（30〜60 分）
+Klopf_2017_PMID_28025392,GSE78766.final.pcl,osmotic,^WT_osmo_stress,^WT_no_stress,1,高浸透圧
+Levy_2007_PMID_17327914,GSE6302_set03_family.pcl,osmotic,\(0\.(25|75) hours\),\(-0\.73 hours\),1,NaCl（グルコース制限のケモスタット、15〜45 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_HOtimeCourse.flt.knn.avg.pcl,oxidative,\((10|20|30) min\),,1,過酸化水素 0.32 mM（10〜30 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_menadione.flt.knn.avg.pcl,oxidative,\((20|30|40) min\),,1,メナジオン 1 mM（20〜40 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_diamideTreatment.flt.knn.avg.pcl,oxidative,\((10|20|30) min\),,1,ジアミド 1.5 mM（10〜30 分）
+Causton_2001_PMID_11179418,2010.Causton01_peroxide.filter.flt.knn.avg.div.log.pcl,oxidative,^Peroxide (20|40)',^Peroxide 0',1,過酸化水素（20〜40 分）
+Berry_2008_PMID_18753408,GSE8335_set01_family.pcl,oxidative,H2O2 (20|30) min,,1,過酸化水素（20〜30 分）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,oxidative,^oxidative stress \(20min\) - WT / WT\+0\.4mM H2O2,,-1,過酸化水素 0.4 mM（20 分。元の比は 未処理/処理 なので向きを反転）
+Alejandro-Osorio_2009_PMID_19470158,GSE9108.final.pcl,oxidative,^H2O2-1_wt_(20|30|40) min$,,1,過酸化水素（20〜40 分）
+Shalem_2008_PMID_18854817,GSE12222_set0_family.pcl,oxidative,t=(30|60)min,t=0$,1,過酸化水素（30〜60 分）
+Levy_2007_PMID_17327914,GSE6302_set04_family.pcl,oxidative,\(0\.25 hours\),\(-0\.73 hours\),1,過酸化水素（グルコース制限のケモスタット、15 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_DTT(y13).flt.knn.avg.pcl,er;reductive,DTT 0(15|30|60) min,,1,DTT 2.5 mM（15〜60 分）
+Travers_2000_PMID_10847680,2010.unfolded_protein_response.pcl,er;reductive,^wt\+DTT (30|60) min$,,1,DTT（30〜60 分）
+Travers_2000_PMID_10847680,2010.unfolded_protein_response.pcl,er,^wt\+tunicamycin 60 min$,,1,ツニカマイシン（60 分）
+Thibault_2011_PMID_22143797,GSE33844_final.pcl,er;reductive,^WT_DTT_rep,^WT_rep,1,DTT
+Thibault_2012_PMID_23000174,GSE39419_final.pcl,er;reductive,^WT_DTT_rep,^WT_rep,1,DTT
+Thibault_2012_PMID_23000174,GSE39419_final.pcl,er,^WT_Tm_rep,^WT_rep,1,ツニカマイシン
+Ahmed_2019_PMID_31144305,GSE129200.final.pcl,er,^Wild-type_TOR1_tunicamycin,^Wild-type_TOR1_control,1,ツニカマイシン
+Levy_2007_PMID_17327914,GSE6302_set01_family.pcl,er;reductive,\(0\.33 hours\),\(-0\.78 hours\),1,DTT（グルコース制限のケモスタット、20 分）
+Gasch_2001_PMID_11598186,2010.DNAdamage.pcl,genotoxic,^wildtype \+ 0\.02% MMS \((30|60|90) min\)$,,1,MMS 0.02%（30〜90 分）
+Gasch_2001_PMID_11598186,2010.DNAdamage.pcl,genotoxic,^wildtype \+ gamma irradiation \((20|30|45|60) min\)$,,1,ガンマ線（20〜60 分）
+Benton_2006_PMID_17140446,GSE6018_set0_family.pcl,genotoxic,exposed to 0\.01% \(v/v\) MMS,exposed to 0% \(v/v\) MMS,1,MMS 0.01%
+Shalem_2008_PMID_18854817,GSE12222_set1_family.pcl,genotoxic,t=(30|60)min,t=0$,1,MMS（30〜60 分）
+Erlich_2008_PMID_19005567,GSE12150_setA_family.pcl,genotoxic,^Wild type treated,^Wild type untreated,1,DNA 損傷剤
+Gasch_2000_PMID_11102521,2010.Gasch00_Ndepletion.flt.knn.avg.pcl,nitrogen_starvation,Nitrogen Depletion (1|2|4) h;,,1,窒素の枯渇（1〜4 時間）
+Bradley_2009_PMID_19180179,GSE11754_set1_family.pcl,nitrogen_starvation,^N-(0\.5|1|2)$,,1,窒素飢餓（0.5〜2 時間）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,nitrogen_starvation,^total nitrogen starvation \(20min\) - WT,,1,窒素飢餓（20 分）
+Tai_2005_PMID_15496405,2010.Tai05.filter.flt.knn.avg.div.log.pcl,nitrogen_starvation,^Aerobic nitrogen limited,^Aerobic glucose limited,1,窒素制限のケモスタット（対照は炭素制限）
+Oliveira_2015_PMID_25888284,GSE54850.final.pcl,alt_nitrogen,Gln2Pro_BY013_T[3-6]$,Gln2Pro_BY013_T0$,1,グルタミン → プロリンへの切り替え
+Boer_2007_PMID_17419774,GSE6405_setA_family.pcl,alt_nitrogen,with [Pp]roline as N-source,with ASN as N-source,1,プロリンを窒素源にした培養（対照はアスパラギン）
+Hardwick_1999_PMID_10611304,2010.Hardwick00.flt.knn.avg.pcl,amino_acid_starvation,amino acid starvation (30|60) min,,1,アミノ酸飢餓（30〜60 分）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,amino_acid_starvation,^amino acid starvation \(20min\) - WT,,1,アミノ酸飢餓（20 分）
+Marton_1998_PMID_9809554,2010.Marton98.log.flt.knn.avg.pcl,amino_acid_starvation,^3AT_10mM,,1,3-アミノトリアゾール 10 mM
+Gasch_2000_PMID_11102521,2010.Gasch00_adenineStarvation.flt.knn.avg.pcl,amino_acid_starvation;adenine_limitation,starvation (1|2) h;,,1,アミノ酸とアデニンの飢餓（1〜2 時間）
+Bradley_2009_PMID_19180179,GSE11754_set0_family.pcl,carbon_starvation,^C-(0\.5|1|2)$,,1,炭素飢餓（0.5〜2 時間）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,glucose_limitation,^0\.1% glucose starvation \(20min\) - WT,,1,0.1% グルコースへ（20 分）
+Casamayor_2012_PMID_22372618,GSE25697_final.pcl,glucose_limitation,^Wild type_0\.05% Glucose,,1,0.05% グルコースへ（15 分）
+Levy_2007_PMID_17327914,GSE6302_set05_family.pcl,glucose_repletion,\(0\.25 hours\),\( -1\.18 hours\),1,グルコースの添加（グルコース制限のケモスタット、15 分）
+Ronen_2006_PMID_16381818,GSE4158_set0_family.pcl,glucose_repletion,\(2g/l\) on galactose chemostat \(t=(10|15|20|30)min\),,1,グルコースの添加（ガラクトースのケモスタット、10〜30 分）
+Cipollina_2008_PMID_18524923,GSE9644_set0_family.pcl,glucose_repletion,CENPK113-7D_t(10|30)_,CENPK113-7D_SS_,1,グルコースの添加（嫌気・炭素制限のケモスタット、10〜30 分）
+Gasch_2000_PMID_11102521,2010.Gasch00_carbonSources.flt.knn.avg.pcl,alt_carbon,^YP galactose,^YP glucose,1,ガラクトース（対照はグルコース）
+Gasch_2000_PMID_11102521,2010.Gasch00_carbonSources.flt.knn.avg.pcl,alt_carbon,^YP raffinose,^YP glucose,1,ラフィノース（対照はグルコース）
+Gasch_2000_PMID_11102521,2010.Gasch00_carbonSources.flt.knn.avg.pcl,nonfermentable,^YP ethanol,^YP glucose,1,エタノール（対照はグルコース）
+Otero_2010_PMID_21176163,GSE21479.final.pcl,alt_carbon,^S288c_Galactose,^S288c_Glucose,1,ガラクトース（対照はグルコース）
+Boccazzi_2006_PMID_16739953,GSE2605.final.pcl,alt_carbon,^Galactose,^Glucose,1,ガラクトース（対照はグルコース）
+Smith_2002_PMID_12135984,2010.peroxisome.pcl,nonfermentable,^Glycerol vs\. glucose,,1,グリセロール（対照はグルコース）
+Cipollina_2008_PMID_18174152,GSE5238_setA_family.pcl,nonfermentable,^CENPK113\.7D EtOH-lim,^CENPK113\.7D Glu-lim,1,エタノール制限のケモスタット（対照はグルコース制限）
+DeRisi_1997_PMID_9381177,2010.diauxic.pcl,diauxic_shift,^(15\.5|18\.5|20\.5) hr$,^0 hr$,1,ジオーキシックシフト（15.5〜20.5 時間）
+Gasch_2000_PMID_11102521,2010.Gasch00_stationaryPhase(y14).flt.knn.avg.pcl,stationary,YPD_(2|3|5)_d_30C,,1,定常期（2〜5 日）
+Gasch_2000_PMID_11102521,2010.Gasch00_stationaryPhase(y12).flt.knn.avg.pcl,stationary,YPD (2|3|5|7) d \(25C\),,1,定常期（2〜7 日）
+Smith_2002_PMID_12135984,2010.peroxisome.pcl,lipid,^Oleate vs\. glycerol \((1 hr|3 hrs)\),,1,オレイン酸（1〜3 時間。対照はグリセロール）
+Thorsen_2007_PMID_17327492,GSE6129_set0_family.pcl,metal_stress,As\(III\) stressed wild-type vs,,1,亜ヒ酸 1 mM（1 時間）
+Haugen_2004_PMID_15575969,2010.arsenic_time_dose.pcl,metal_stress,^100uM AsIII \((0\.5|2)hr\),,1,亜ヒ酸 100 µM（0.5〜2 時間）
+Batista-Nascimento_2013_PMID_23295455,GSE33427.remapped.final.pcl,metal_stress,^WT_AsV_60min,^WT_notreatment,1,ヒ酸（60 分）
+Romero_2019_PMID_31394264,GSE127875.final.pcl,iron_limitation,^Processed RA data at time t(90|180),^Processed RA data at time t0,1,鉄キレート剤 BPS（90〜180 分）
+Lai_2006_PMID_16963631,2010.glucose_anoxia_reoxygenation.pcl,hypoxia,^(1|2|3)\.00 gen$,^0\.00 gen$,1,無酸素（1〜3 世代）
+Vizoso-Vazquez_2012_PMID_22189861,GSE30046_final.pcl,hypoxia,^wt hypoxia [AB]$,^wt O2 [AB]$,1,低酸素
+Hickman_2007_PMID_17785431,GSE8613_setA_family.pcl,hypoxia,^Aerobic/hypoxic expression in wild-type,,-1,低酸素（元の比は 好気/低酸素 なので向きを反転）
+Kundaje_2008_PMID_19008939,GSE8343_setA_family.pcl,hypoxia,\[anaerobic_Hap1\+\]_6hrs,\[air\+Hap1\+\]_rep,1,嫌気（6 時間）
+Hardwick_1999_PMID_10611304,2010.Hardwick00.flt.knn.avg.pcl,rapamycin,rapamycin haploid (30|60) min,rapamycin haploid 0 min,1,ラパマイシン（30〜60 分）
+Hughes_Hallett_2014_PMID_25085507,GSE58992.final.pcl,rapamycin,^rapamycin treatment \(20min\) - WT,,1,ラパマイシン（20 分）
+Urban_2007_PMID_17560372,GSE7660_set2_family.pcl,rapamycin,Rapamycin_(20|30|60)min,,1,ラパマイシン（20〜60 分）
+Talarek_2010_PMID_20471941,GSE20539.final.pcl,rapamycin,^Y2092 (20|60)min,,1,ラパマイシン（20〜60 分）
+Park_2013_PMID_24349523,GSE51376.final.pcl,rapamycin,^wild_type_rapamycin,^wild_type_DMSO,1,ラパマイシン
+Reinke_2006_PMID_16923813,GSE4584_set0_family.pcl,rapamycin,^(W303a -/\+ (1|5) |S288c -/\+ rapamycin),,1,ラパマイシン
+Aghajan_2010_PMID_20581845,GSE22269.final.pcl,rapamycin,^Yeast_rapamycin_30min,^Yeast_DMSO_30min,1,ラパマイシン（30 分）
+Alhaj_Sulaiman_2022_PMID_35705668,GSE201413.final.pcl,rapamycin,"^Wild Type, treated","^Wild Type, untreated",1,ラパマイシン
+Huang_2004_PMID_15539461,2010.rapamycin.pcl,rapamycin,^WT \+ Rapamycin$,,1,ラパマイシン
+Reinke_2006_PMID_16923813,GSE4584_set1_family.pcl,drug,^W303a -/\+ (3|6) mM caffeine,,1,カフェイン 3〜6 mM
+Garcia_2004_PMID_14739279,GSE961.final.pcl,cell_wall,congo red,,1,コンゴーレッド（2 時間）
+Casamayor_2012_PMID_22372618,GSE25697_final.pcl,alkaline,^WT_KOH_10min,,1,アルカリ（KOH、10 分。対照は KCl）
+Abbott_2008_PMID_18676708,GSE10066_setA_family.pcl,weak_acid,500 mM lactic acid \(pH 3\),reference \(pH 3\),1,乳酸 500 mM（pH 3。対照は乳酸なしの pH 3）

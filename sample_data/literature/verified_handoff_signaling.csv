@@ -1,0 +1,2 @@
+source_protein,target_protein,interaction_type,effect,direct,condition,pmids,evidence,confidence,status,note,verified_on,verified_note,partner,site,evidence_kind,necessity,redundant_with,strength,layer,timing
+RIM15,UME6,inhibition,inhibit,direct,窒素飢餓,32240040,,medium,new,Rim15 は Ume6 を抑えて ATG8 の転写の抑制を外す（Ume6 のリン酸化を介するらしいが、Rim15 による直接のリン酸化は要旨にない）。33・35 回目の調べから渡された組,2026-10-04,要旨: 窒素飢餓で Tps2 は Rim15 を 14-3-3（Bmh1/2）から離して核への移行と活性化を促す。Rim15 は Ume6 の負の調節因子で、tps2Δ では Ume6 が脱リン酸化されて ATG8 の転写を抑える（32240040）,,,in_vivo;genetic,,,,activity,

@@ -1,0 +1,192 @@
+{
+ "sites": [
+  {
+   "name": "SGD",
+   "url": "https://www.yeastgenome.org/",
+   "match": [
+    "SGD GO 注釈"
+   ]
+  },
+  {
+   "name": "BioGRID",
+   "url": "https://thebiogrid.org/",
+   "match": [
+    "BioGRID"
+   ]
+  },
+  {
+   "name": "PhosphoGRID",
+   "url": "https://phosphogrid.org/",
+   "match": [
+    "PhosphoGRID"
+   ]
+  },
+  {
+   "name": "YEASTRACT+",
+   "url": "https://yeastract-plus.org/",
+   "match": [
+    "YEASTRACT"
+   ]
+  },
+  {
+   "name": "GO-CAM",
+   "url": "https://geneontology.org/",
+   "match": [
+    "GO-CAM"
+   ]
+  },
+  {
+   "name": "UniProt",
+   "url": "https://www.uniprot.org/",
+   "match": [
+    "UniProt"
+   ]
+  },
+  {
+   "name": "Complex Portal",
+   "url": "https://www.ebi.ac.uk/complexportal/",
+   "match": [],
+   "note": "複合体 633 件"
+  },
+  {
+   "name": "YGOB",
+   "url": "http://ygob.ucd.ie/",
+   "match": [],
+   "note": "パラログ 545 組"
+  },
+  {
+   "name": "Alliance",
+   "url": "https://www.alliancegenome.org/",
+   "match": [],
+   "note": "パラログ 569 組"
+  },
+  {
+   "name": "SGD SPELL",
+   "url": "https://spell.yeastgenome.org/",
+   "match": [],
+   "note": "発現の測定 93 件"
+  }
+ ],
+ "papers": [
+  {
+   "pmid": "32181581",
+   "match": [
+    "IDEA"
+   ]
+  },
+  {
+   "pmid": "24766815",
+   "match": [
+    "破壊株データ"
+   ]
+  },
+  {
+   "pmid": "21177495",
+   "match": [
+    "21177495"
+   ]
+  },
+  {
+   "pmid": "10847680",
+   "match": [
+    "10847680"
+   ]
+  },
+  {
+   "pmid": "15037758",
+   "match": [
+    "細胞周期の論理モデル"
+   ]
+  },
+  {
+   "pmid": "24376454",
+   "match": [
+    "細胞周期の論理モデル"
+   ]
+  },
+  {
+   "pmid": "34535069",
+   "match": [
+    "細胞周期の論理モデル"
+   ]
+  },
+  {
+   "pmid": "3306402",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "7628692",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "8598289",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "10733573",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "10983975",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "11809814",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "12455951",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "15911613",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "17438333",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "20702584",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "27554843",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "28993463",
+   "match": [
+    "中心経路の論理モデル"
+   ]
+  },
+  {
+   "pmid": "31586406",
+   "match": [
+    "YEASTRACT"
+   ]
+  }
+ ]
+}

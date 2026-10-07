@@ -1,0 +1,12 @@
+tf,phases,note
+SWI4,G1,SBF（Swi4-Swi6）。G1 の後半に SCB をもつ遺伝子（CLN1・CLN2 など）を転写する
+SWI6,G1,SBF・MBF の共通のサブユニット
+MBP1,G1,MBF（Mbp1-Swi6）。G1 の後半に MCB をもつ遺伝子（CLB5・CLB6・DNA 複製の遺伝子）を転写する
+STB1,G1,SBF・MBF と組んで G1/S の転写を助ける
+HCM1,S;G2/M,S 期に S/G2 の遺伝子（NDD1・FKH1・FKH2・WHI5 など）を転写する（Pramila 2006）
+FKH1,G2/M,Mcm1 と組んで G2/M の遺伝子（CLB2 群）を転写する
+FKH2,G2/M,Mcm1・Ndd1 と組んで G2/M の遺伝子（CLB2 群）を転写する
+NDD1,G2/M,Fkh2-Mcm1 に加わって G2/M の遺伝子（CLB2 群）を活性化する
+MCM1,G2/M;M/G1,G2/M（Fkh2・Ndd1 と組む）と M/G1（ECB をもつ遺伝子。CLN3・SWI4・CDC6 など）
+SWI5,M/G1,分裂期の終わりに核に入り、M/G1 の遺伝子（SIC1・ASH1 など）を転写する
+ACE2,M/G1,分裂期の終わりに娘細胞の核に入り、M/G1 の遺伝子（CTS1・DSE1・DSE2 など）を転写する

@@ -1,0 +1,17 @@
+condition,baseline,inputs,note
+rapamycin,,Rapamycin=1,
+nitrogen_starvation,,Nitrogen=0;AminoAcids=0,窒素がなければ細胞内のアミノ酸も減る
+amino_acid_starvation,,AminoAcids=0,
+carbon_starvation,,Glucose=0,
+glucose_limitation,,Glucose=0,0.05〜0.2% への切り替えも「グルコースなし」として扱う
+nonfermentable,,Glucose=0,
+diauxic_shift,,Glucose=0,
+stationary,,Glucose=0;Nitrogen=0;AminoAcids=0,栄養がすべて尽きた状態として扱う
+glucose_repletion,Glucose=0,Glucose=1,グルコースのない状態から加える
+amino_acid_repletion,AminoAcids=0,AminoAcids=1,アミノ酸のない状態から加える
+osmotic,,Osmotic=1,
+heat,,Heat=1,
+oxidative,,Oxidative=1,
+cell_wall,,CellWall=1,
+alkaline,,Alkaline=1,
+calcium,,Calcium=1,

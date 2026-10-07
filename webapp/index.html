@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pathways viewer</title>
+<meta name="description" content="Pathways viewer for Saccharomyces cerevisiae（ブラウザ版）">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='8' cy='8' r='5' fill='%23e65100'/%3E%3Ccircle cx='24' cy='12' r='5' fill='%231e88e5'/%3E%3Ccircle cx='14' cy='25' r='5' fill='%236a1b9a'/%3E%3Cpath d='M8 8L24 12M24 12L14 25' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="qt.css">
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-card">
+    <div class="boot-title">Pathways viewer for <i>Saccharomyces cerevisiae</i></div>
+    <div id="boot-step">読み込んでいます…</div>
+    <div class="boot-track"><div id="boot-bar"></div></div>
+    <div class="boot-note">初めて開くときは 1 分ほどかかることがあります。2 回目からは速くなります。</div>
+    <pre id="boot-detail"></pre>
+  </div>
+</div>
+<script src="boot.js"></script>
+</body>
+</html>

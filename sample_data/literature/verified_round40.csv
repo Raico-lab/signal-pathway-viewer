@@ -1,0 +1,2 @@
+source_protein,target_protein,interaction_type,effect,direct,condition,pmids,evidence,confidence,status,note,verified_on,verified_note,partner,site,evidence_kind,necessity,redundant_with,strength,layer,timing,fill_pmid,fill_evidence
+MON2,ARL1,binding,none,direct,,16219684;22594927,,medium,flag,,2026-10-04,向きを決めない（SGD GO の促進は GEF という推測（12052896）に基づく。16219684 は Mon2 を足場とし、22594927 の負の調節は GTP 型変異体 Arl1[Q72L] の遺伝学だけで、論文どうしの向きも逆）。直接の結合は確か,,,,,,,,,,

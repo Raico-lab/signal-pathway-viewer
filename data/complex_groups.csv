@@ -1,0 +1,31 @@
+label,genes,aliases,complex_portal,note
+TORC1,TOR1;TOR2;KOG1;LST8;TCO89,TORC1|TOR complex 1|TORC 1,CPX-1715;CPX-1716,TOR1 版と TOR2 版の両方の構成要素
+TORC2,TOR2;LST8;AVO1;AVO2;TSC11;BIT61,TORC2|TOR complex 2|TORC 2,CPX-1717,TSC11 は AVO3 の標準名
+calcineurin,CNA1;CMP2;CNB1,calcineurin|CaN,CPX-588;CPX-590,触媒サブユニット 2 つ（CNA1・CMP2）と調節サブユニット CNB1
+CK2,CKA1;CKA2;CKB1;CKB2,CK2|CKII|casein kinase II|casein kinase 2,CPX-581;CPX-769;CPX-770,
+PKA,TPK1;TPK2;TPK3,PKA|protein kinase A|cAMP-dependent protein kinase,CPX-536;CPX-537;CPX-571;CPX-572;CPX-573;CPX-574,触媒サブユニットだけ。調節サブユニット BCY1 は PKA を抑えるので入れない
+ORC,ORC1;ORC2;ORC3;ORC4;ORC5;ORC6,ORC|origin recognition complex,CPX-768,
+HAP complex,HAP2;HAP3;HAP4;HAP5,HAP complex|Hap complex|HAP2/3/4/5|Hap2/3/4/5|Hap2/3/4|HAP2/3/4|CCAAT-binding,CPX-1830,
+SNF1 complex,SNF1;SNF4;GAL83;SIP1;SIP2,SNF1 complex|Snf1 complex|SNF1 kinase complex|Snf1 kinase complex,CPX-231;CPX-232;CPX-2800,
+AP-2 complex,APL1;APL3;APM4;APS2,AP-2|AP-2 complex|AP2 complex,CPX-534,
+26S proteasome,RPN1;RPN2;RPN3;RPN5;RPN6;RPN7;RPN8;RPN9;RPN10;RPN11;RPN12;RPN13;SEM1;RPT1;RPT2;RPT3;RPT4;RPT5;RPT6;PRE1;PRE2;PRE3;PRE4;PRE5;PRE6;PRE7;PRE8;PRE9;PRE10;PUP1;PUP2;PUP3;SCL1,26S proteasome|proteasome subunit genes|proteasome genes,CPX-2262,
+TFIIIC,TFC1;TFC3;TFC4;TFC6;TFC7;TFC8,TFIIIC,CPX-1656,
+RPA,RFA1;RFA2;RFA3,RPA|replication protein A,CPX-21,RNA ポリメラーゼ I の遺伝子（RPA190 など）とは別
+pol alpha-primase,POL1;POL12;PRI1;PRI2,pol alpha-primase|Pol alpha-primase|pol-prim|DNA polymerase alpha-primase|polymerase alpha-primase,CPX-2091,
+RNA polymerase II,RPO21;RPB2;RPB3;RPB4;RPB5;RPO26;RPB7;RPB8;RPB9;RPB10;RPB11;RPC10,RNA polymerase II|RNA Pol II|RNAPII|Pol II,CPX-2662,
+complex III,COR1;QCR2;QCR7;QCR9;QCR6;RIP1;QCR8;QCR10;CYT1;COB,complex III|cytochrome bc1 complex|bc1 complex|cytochrome bc1,CPX-567,
+cytochrome c oxidase,COX1;COX2;COX3;COX4;COX5A;COX5B;COX6;COX7;COX8;COX9;COX12;COX13,cytochrome c oxidase|complex IV|CcO|COX complex,CPX-1721;CPX-1722,
+ATP synthase,ATP1;ATP2;ATP3;ATP4;ATP5;ATP6;ATP7;ATP8;OLI1;ATP14;ATP15;ATP16;ATP17;ATP18;ATP19;ATP20;TIM11,ATP synthase|F1F0-ATP synthase|F0F1-ATP synthase|F1Fo-ATP synthase|F1F0-ATPase,CPX-3281,
+COPI,COP1;SEC26;SEC27;SEC21;RET2;SEC28;RET3,COPI|coatomer,CPX-1652,
+CCT,TCP1;CCT2;CCT3;CCT4;CCT5;CCT6;CCT7;CCT8,CCT|TRiC|chaperonin containing TCP-1,CPX-2156,
+COG complex,COG1;COG2;COG3;COG4;COG5;COG6;COG7;COG8,COG complex|COG,CPX-1840,
+retromer,VPS35;VPS29;PEP8;VPS5;VPS17,retromer,CPX-1653,
+GID complex,VID24;GID7;VID30;VID28;FYV10;GID8;RMD5,GID complex|Gid complex|GID E3 ligase|GID ubiquitin ligase,CPX-301,
+MBF,MBP1;SWI6,MBF|DSC1,CPX-950,
+UTP-A complex,UTP4;UTP5;UTP8;UTP9;UTP10;UTP15;NAN1,UTP-A|t-UTP,CPX-1409,
+UTP-B complex,PWP2;UTP6;UTP13;UTP18;UTP21;DIP2,UTP-B,CPX-1410,
+TRAPP,BET3;BET5;TRS20;TRS23;TRS31;TRS33,TRAPP,CPX-1940;CPX-1939;CPX-1383,TRAPP I〜III に共通の中心部
+m-AAA protease,AFG3;YTA12,m-AAA protease|m-AAA,,Complex Portal に見当たらない。Yta10（Afg3）と Yta12 が作る（9707443）
+Gbetagamma,STE4;STE18,Gbetagamma|Gβγ|G beta gamma|Gbeta gamma,,Complex Portal に見当たらない。SGD: Ste4 が Ste18 と二量体を作る
+HACS,CCH1;MID1,HACS|high-affinity Ca2+ influx system|high-affinity calcium influx system,,Complex Portal に見当たらない。SGD: Cch1 と Mid1 が作る高親和性 Ca2+ 流入系
+ETF,AIM45;CIR1,ETF|yETF|electron transfer flavoprotein,,Complex Portal に出芽酵母の項目なし。SGD: AIM45・CIR1 は ETF-α・β のオルソログ

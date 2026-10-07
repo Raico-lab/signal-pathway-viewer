@@ -1,0 +1,17 @@
+name,file,column,baseline,expected,note
+熱ショック（Gasch 15 分）,Gasch_2000_PMID_11102521/2010.Gasch00_HS25-37.flt.knn.avg.pcl,heat shock 15 min,,HSF1:+;MSN2/4:+;PKA:-,25 → 37℃
+熱ショック（Causton 15 分）,Causton_2001_PMID_11179418/2010.Causton01_heat.filter.flt.knn.avg.div.log.pcl,Heat 15',Heat 0' (A),HSF1:+;MSN2/4:+;PKA:-,
+高浸透圧（Gasch ソルビトール 15 分）,Gasch_2000_PMID_11102521/2010.Gasch00_hyper-osmotic.flt.knn.avg.pcl,1M sorbitol - 15 min,,HOG1:+;PBS2:+;HOT1:+;MSN2/4:+,
+高浸透圧（Causton NaCl 15 分）,Causton_2001_PMID_11179418/2010.Causton01_NaCl.filter.flt.knn.avg.div.log.pcl,NaCl 15',NaCl 0',HOG1:+;PBS2:+;HOT1:+;MSN2/4:+,
+高浸透圧（Causton ソルビトール 15 分）,Causton_2001_PMID_11179418/2010.Causton01_sorbitol.filter.flt.knn.avg.div.log.pcl,Sorbitol 15',Sorbitol 0',HOG1:+;PBS2:+;HOT1:+;MSN2/4:+,
+過酸化水素（Gasch 20 分）,Gasch_2000_PMID_11102521/2010.Gasch00_HOtimeCourse.flt.knn.avg.pcl,constant 0.32 mM H2O2 (20 min) redo,,YAP1:+;SKN7:+;MSN2/4:+,
+過酸化水素（Causton 20 分）,Causton_2001_PMID_11179418/2010.Causton01_peroxide.filter.flt.knn.avg.div.log.pcl,Peroxide 20',Peroxide 0' (A),YAP1:+;SKN7:+;MSN2/4:+,
+メナジオン（Gasch 20 分）,Gasch_2000_PMID_11102521/2010.Gasch00_menadione.flt.knn.avg.pcl,1 mM Menadione (20 min) redo,,YAP1:+;SKN7:+;MSN2/4:+,
+ジアミド（Gasch 20 分）,Gasch_2000_PMID_11102521/2010.Gasch00_diamideTreatment.flt.knn.avg.pcl,1.5 mM diamide (20 min),,YAP1:+;MSN2/4:+,
+窒素飢餓（Gasch 1 時間）,Gasch_2000_PMID_11102521/2010.Gasch00_Ndepletion.flt.knn.avg.pcl,Nitrogen Depletion 1 h,,GLN3:+;GAT1:+;TORC1:-;MSN2/4:+,
+アミノ酸飢餓（Gasch 1 時間）,Gasch_2000_PMID_11102521/2010.Gasch00_adenineStarvation.flt.knn.avg.pcl,Amino acid + adenine starvation 1 h,,GCN4:+;GCN2:+,アミノ酸とアデニンの飢餓
+アミノ酸飢餓（Hardwick 30 分）,Hardwick_1999_PMID_10611304/2010.Hardwick00.flt.knn.avg.pcl,Hardwick00_amino acid starvation 30 min,,GCN4:+;GCN2:+,
+ラパマイシン（Hardwick 30 分）,Hardwick_1999_PMID_10611304/2010.Hardwick00.flt.knn.avg.pcl,Hardwick00_rapamycin haploid 30 min,,TORC1:-;GLN3:+;GAT1:+;MSN2/4:+;SFP1:-,
+ラパマイシン（Hardwick 60 分）,Hardwick_1999_PMID_10611304/2010.Hardwick00.flt.knn.avg.pcl,Hardwick00_rapamycin haploid 60 min,,TORC1:-;GLN3:+;GAT1:+;MSN2/4:+;SFP1:-,
+定常期へ（Gasch 12 時間）,Gasch_2000_PMID_11102521/2010.Gasch00_stationaryPhase(y12).flt.knn.avg.pcl,YPD 12 h (25C),,SNF1 複合体:+;MIG1:-;CAT8:+;ADR1:+;PKA:-;RIM15:+,グルコースが尽きる時期（ジオーキシーシフト）
+DTT（Gasch 60 分）,Gasch_2000_PMID_11102521/2010.Gasch00_DTT(y14).flt.knn.avg.pcl,dtt 060 min,dtt 000 min,HAC1:+;IRE1:+,小胞体ストレス（UPR）

@@ -1,0 +1,6 @@
+PyQt6>=6.6
+PyQt6-WebEngine>=6.6
+SQLAlchemy>=2.0
+pandas>=2.0
+networkx>=3.0
+pyinstaller>=6.0

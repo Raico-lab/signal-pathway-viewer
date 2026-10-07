@@ -1,0 +1,58 @@
+treatment,conditions,label
+AA,weak_acid,酢酸 50 mM
+C3,ph_stress,pH 3
+C8,alkaline,pH 8
+P8,alkaline,pH 8（Tris）
+CA,osmotic;calcium,CaCl2 0.4 M
+KC,osmotic,KCl 0.4 M
+NC,osmotic,NaCl 0.4 M
+SO,osmotic,ソルビトール 1 M
+CF,drug,カフェイン 20 mM
+CG,alt_carbon,ガラクトースへ
+RF,alt_carbon,ラフィノースへ
+CP,nonfermentable,ピルビン酸へ
+EC,nonfermentable,エタノールへ
+GL,nonfermentable,グリセロールへ
+SA,nonfermentable,酢酸へ
+NG,carbon_starvation,炭素源なし
+CN,carbon_starvation;nitrogen_starvation,炭素・窒素・アミノ酸なし
+LG,glucose_limitation,0.2% グルコースへ
+NN,nitrogen_starvation,窒素源なし
+OA,lipid,オレイン酸へ
+CS18,cold,18℃ へ
+CS23,cold,23℃ へ
+HS37,heat,37℃ へ
+HS42,heat,42℃ へ
+CW,cell_wall,カルコフロールホワイト
+DC,cell_wall,デオキシコール酸
+SD,cell_wall,SDS 0.02%
+CI,calcium,カルシウムイオノフォア A23187
+DI,oxidative,ジアミド 1.5 mM
+H21,oxidative,過酸化水素 1 mM
+H2O1,oxidative,過酸化水素 0.1 mM
+MD,oxidative,メナジオン 1 mM
+PQ,oxidative,パラコート
+SH,oxidative,次亜塩素酸
+DT,er;reductive,DTT 2.5 mM
+TU,er,ツニカマイシン
+BM,reductive,2-メルカプトエタノール
+MS,genotoxic,MMS 0.05%
+HU,genotoxic,ヒドロキシ尿素 200 mM
+ZC,genotoxic,ゼオシン
+CM,genotoxic,カンプトテシン
+CO,metal_stress,CoCl2 0.8 mM
+MN,metal_stress,MnCl2 3.5 mM
+FE,iron_repletion,FeSO4 0.5 mM（鉄の過剰）
+ZN,zinc_repletion,ZnSO4 2.5 mM（亜鉛の過剰）
+RP,rapamycin,ラパマイシン 220 nM
+ST,drug,スタウロスポリン
+CY,drug,カリクリン A
+WT,drug,ワートマニン
+FZ,drug,フルコナゾール
+CZ,drug,クロトリマゾール
+MY,drug,ミリオシン
+FP,mitochondrial,FCCP（脱共役剤）
+OY,mitochondrial,オリゴマイシン A
+RN,mitochondrial,ロテノン
+SP,stationary,定常期（24 時間）
+AF,mating,α 因子

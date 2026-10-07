@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Pathways viewer for Saccharomyces cerevisiae</title>
+<link rel="stylesheet" href="network.css">
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script src="lib/cytoscape.min.js"></script>
+<script src="lib/dagre.min.js"></script>
+<script src="lib/cytoscape-dagre.js"></script>
+<script src="lib/cytoscape-svg.js"></script>
+</head>
+<body>
+<div id="cy"></div>
+<div id="busy"></div>
+<div id="legend">
+  <div class="legend-head" id="legend-toggle">凡例 <span id="legend-caret">▾</span></div>
+  <div id="legend-body">
+    <div class="lsec" data-sec="marks">
+      <div class="legend-section">強調表示</div>
+      <div class="lsec-body">
+      <div class="legend-row"><span class="mark mark-picked"></span>選択</div>
+      <div class="mark-list" id="marks-picked"></div>
+      <div class="legend-row"><span class="mark mark-picked2"></span>拡張</div>
+      <div class="mark-list" id="marks-grown"></div>
+      <div class="legend-row"><span class="mark mark-focus"></span>注目</div>
+      <div class="mark-list" id="marks-focus"></div>
+      </div>
+    </div>
+    <div class="lsec" data-sec="effects">
+      <div class="legend-section"><input type="checkbox" class="sec-check" data-kind="effects" title="この欄の項目をすべて表示する・すべて外す"><span id="legend-effect-title">作用</span></div>
+      <div class="lsec-body">
+      <label class="legend-row"><input type="checkbox" class="filter" data-kind="effects" data-key="activate" checked><svg data-effect="activate" width="46" height="12"><line x1="2" y1="6" x2="36" y2="6" stroke="#555" stroke-width="2.5"/><polygon points="36,1 45,6 36,11" fill="#555"/></svg>促進</label>
+      <label class="legend-row"><input type="checkbox" class="filter" data-kind="effects" data-key="inhibit" checked><svg data-effect="inhibit" width="46" height="12"><line x1="2" y1="6" x2="42" y2="6" stroke="#555" stroke-width="2.5"/><line x1="43" y1="0" x2="43" y2="12" stroke="#555" stroke-width="3"/></svg>抑制</label>
+      <label class="legend-row"><input type="checkbox" class="filter" data-kind="effects" data-key="none" checked><svg data-effect="none" width="46" height="12"><line x1="2" y1="6" x2="34" y2="6" stroke="#555" stroke-width="2.5"/><polygon points="34,6 39.5,2 45,6 39.5,10" fill="#fff" stroke="#555" stroke-width="1.5"/></svg>作用不明</label>
+      <div class="legend-row" style="padding-left:18px"><svg data-effect="binding" width="46" height="12"><line x1="2" y1="6" x2="44" y2="6" stroke="#555" stroke-width="2.5" stroke-dasharray="2,3"/></svg>結合</div>
+      </div>
+    </div>
+    <div class="lsec" data-sec="types">
+      <div class="legend-section"><input type="checkbox" class="sec-check" data-kind="types" title="この欄の項目をすべて表示する・すべて外す"><span id="legend-type-title">修飾・制御の種類</span></div>
+      <div class="lsec-body">
+      <div id="legend-types"></div>
+      </div>
+    </div>
+    <div class="lsec" data-sec="nodes">
+      <div class="legend-section"><input type="checkbox" class="sec-check" data-kind="roles" id="legend-nodes-check" title="この欄の項目をすべて表示する・すべて外す"><span id="legend-node-title">遺伝子の色</span></div>
+      <div class="lsec-body">
+      <div id="legend-nodes"></div>
+      </div>
+    </div>
+    <div id="legend-role-filter" class="lsec" data-sec="roles">
+      <div class="legend-section"><input type="checkbox" class="sec-check" data-kind="roles" title="この欄の項目をすべて表示する・すべて外す"><span>役割で絞り込み</span></div>
+      <div class="lsec-body"><div id="legend-roles"></div></div>
+    </div>
+    <div class="lsec" data-sec="display">
+      <div class="legend-section"><input type="checkbox" class="sec-check" data-kind="display" title="この欄の項目をすべて表示する・すべて外す"><span>表示</span></div>
+      <div class="lsec-body">
+        <label class="legend-row"><input type="checkbox" class="opt" data-opt="more" checked>+数: 表示されていない下流の数</label>
+        <label class="legend-row"><input type="checkbox" class="opt" data-opt="lod">縮小したら下流の枝先を省略</label>
+        <label class="legend-row"><input type="checkbox" class="opt" data-opt="symbols">種類記号</label>
+      </div>
+    </div>
+    <button id="legend-help" type="button" title="凡例の見方を右側に表示します">Help</button>
+  </div>
+</div>
+<div id="message"></div>
+<div id="node-actions">
+  <button type="button" data-action="grow" class="act-grow" title="この遺伝子の上流・下流を 1 階層追加します">拡張</button>
+  <button type="button" data-action="focus" class="act-focus" title="この遺伝子を中心に表示し直します">注目</button>
+</div>
+<script src="router.js"></script>
+<script src="network.js"></script>
+</body>
+</html>

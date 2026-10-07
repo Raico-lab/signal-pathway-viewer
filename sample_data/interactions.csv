@@ -1,0 +1,33 @@
+source_protein,target_protein,interaction_type,effect,threshold,weight,signal_threshold_rule,evidence
+IML1,GTR1,inhibition,,0.5,0.9,GAP活性でGtr1をGDP型にする,サンプル（構造確認用）
+NPR2,GTR1,inhibition,,0.5,0.9,,サンプル（構造確認用）
+NPR3,GTR1,inhibition,,0.5,0.9,,サンプル（構造確認用）
+GTR1,KOG1,activation,,0.5,1.0,,サンプル（構造確認用）
+PIB2,KOG1,activation,,0.5,0.6,,サンプル（構造確認用）
+FPR1,TOR1,inhibition,,0.5,1.0,ラパマイシン結合時に完全阻害,サンプル（構造確認用）
+TOR1,SCH9,phosphorylation,,0.5,1.0,High_Signal_Required,Direct phosphorylation by TORC1
+TOR1,TAP42,phosphorylation,,0.5,1.0,Low_Threshold,サンプル（構造確認用）
+TAP42,SIT4,inhibition,,0.5,1.0,,サンプル（構造確認用）
+SIT4,GLN3,dephosphorylation,,0.5,1.0,,サンプル（構造確認用）
+TOR1,GLN3,inhibition,,0.5,1.0,Low_Threshold_Inhibition,TORC1 inhibits Gln3 localization via Tap42/Sit4 pathway
+TOR1,GAT1,inhibition,,0.5,1.0,,サンプル（構造確認用）
+SIT4,NPR1,dephosphorylation,,0.5,1.0,,サンプル（構造確認用）
+TOR1,NPR1,phosphorylation,inhibit,0.5,1.0,リン酸化で不活性化,サンプル（構造確認用）
+NPR1,GAP1,localization,,0.5,1.0,,サンプル（構造確認用）
+TOR1,ATG13,phosphorylation,inhibit,0.5,1.0,リン酸化で不活性化,サンプル（構造確認用）
+ATG13,ATG1,binding,activate,0.5,1.0,,サンプル（構造確認用）
+TOR1,SFP1,phosphorylation,,0.5,1.0,,サンプル（構造確認用）
+SFP1,RPL3,transcription,,0.5,1.0,,サンプル（構造確認用）
+SCH9,RIM15,phosphorylation,inhibit,0.5,1.0,リン酸化で細胞質に保持,サンプル（構造確認用）
+SCH9,DOT6,phosphorylation,inhibit,0.5,1.0,,サンプル（構造確認用）
+RIM15,MSN2,activation,,0.5,1.0,,サンプル（構造確認用）
+RIM15,GIS1,activation,,0.5,1.0,,サンプル（構造確認用）
+MSN2,HSP12,transcription,,0.5,1.0,,サンプル（構造確認用）
+GLN3,MEP2,transcription,,0.5,1.0,,サンプル（構造確認用）
+GLN3,DAL5,transcription,,0.5,1.0,,サンプル（構造確認用）
+GAT1,DAL5,transcription,,0.5,0.8,,サンプル（構造確認用）
+GLN3,GAP1,transcription,,0.5,0.8,,サンプル（構造確認用）
+SLM1,AVO3,activation,,0.5,1.0,,サンプル（構造確認用）
+TOR2,YPK1,phosphorylation,,0.5,1.0,,サンプル（構造確認用）
+PKH1,YPK1,phosphorylation,,0.5,0.5,,サンプル（構造確認用）
+YPK1,ORM1,phosphorylation,inhibit,0.5,1.0,リン酸化で不活性化,サンプル（構造確認用）

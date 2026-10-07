@@ -1,0 +1,31 @@
+data/complexes.csv のまとまり	Complex Portal	名前	こちらだけの遺伝子	Complex Portal だけの遺伝子	結果
+TORC1	CPX-1715	TORC1 serine/threonine-protein kinase complex, TOR1 variant	TOR2		構成が違う
+TORC2	CPX-1717	TORC2 complex			一致
+EGO	CPX-3172	EGO complex			一致
+SEACIT	CPX-3231	SEA complex		MTC5・RTC1・SEA4・SEC13・SEH1	構成が違う
+PKA	CPX-572	cAMP-dependent protein kinase complex variant 4	TPK3		構成が違う
+CK2	CPX-581	Casein kinase II complex, CKA1-CKA2 variant			一致
+SNF1 複合体	CPX-231	Snf1 protein kinase complex variant GAL83	SIP1・SIP2		構成が違う
+PP2A-Cdc55	CPX-1856	Serine/threonine-protein phosphatase PP2A variant 1	PPH22		構成が違う
+PP2A-Rts1	CPX-1857	Serine/threonine-protein phosphatase PP2A variant 2	PPH22		構成が違う
+SIT4 複合体	CPX-1864	SIT4-SAP155 phosphatase complex	SAP185・SAP190・SAP4		構成が違う
+カルシニューリン	CPX-588	Calcineurin complex variant 1	CMP2		構成が違う
+RAS			RAS1・RAS2		Complex Portal に重なる複合体なし
+IRA（Ras GAP）			IRA1・IRA2		Complex Portal に重なる複合体なし
+YPK			YPK1・YPK2		Complex Portal に重なる複合体なし
+PKH			PKH1・PKH2		Complex Portal に重なる複合体なし
+CK1			YCK1・YCK2		Complex Portal に重なる複合体なし
+MKK1/2			MKK1・MKK2		Complex Portal に重なる複合体なし
+IGO1/2			IGO1・IGO2		Complex Portal に重なる複合体なし
+MSN2/4			MSN2・MSN4		Complex Portal に重なる複合体なし
+RTG1/3	CPX-828	RTG transcription factor complex			一致
+SBF	CPX-946	SBF transcription complex			一致
+MBF	CPX-950	MBP transcription complex			一致
+INO2/4	CPX-1277	INO2-INO4 transcription activation complex			一致
+HAP 複合体	CPX-1830	CCAAT-binding factor complex			一致
+PHO4/2			PHO2・PHO4		Complex Portal に重なる複合体なし
+GCR1/2	CPX-1229	RAP1-GCR1-GCR2 transcription activation complex		RAP1	構成が違う
+ATG1 複合体	CPX-1676	ATG1/ULK1 protein kinase complex			一致
+eIF2	CPX-427	Eukaryotic translation initiation factor 2 complex			一致
+eIF2B	CPX-429	Eukaryotic translation initiation factor 2B complex			一致
+eIF4F	CPX-430	Eukaryotic translation initiation factor 4F complex, variant TIF4631	TIF2・TIF4632		構成が違う

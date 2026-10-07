@@ -1,0 +1,17 @@
+name,answers,note
+熱ショック（Gasch 15 分）,PKA:-:MSN2/4|GIS1;HSF1:+:HSF1;MSN2/4:+:MSN2/4,PKA の不活性化で MSN2/4 が働く。HSF1 は熱で直接活性化する
+熱ショック（Causton 15 分）,PKA:-:MSN2/4|GIS1;HSF1:+:HSF1;MSN2/4:+:MSN2/4,同上
+高浸透圧（Gasch ソルビトール 15 分）,HOG1:+:HOT1|SKO1|MSN2/4;PBS2:+:HOT1|SKO1|MSN2/4;SSK1:-:HOT1|SKO1;SHO1:+:HOT1|SKO1,HOG 経路（SLN1 枝・SHO1 枝）→ Hot1・Sko1・Msn2/4
+高浸透圧（Causton NaCl 15 分）,HOG1:+:HOT1|SKO1|MSN2/4;PBS2:+:HOT1|SKO1|MSN2/4;SSK1:-:HOT1|SKO1;SHO1:+:HOT1|SKO1,同上
+高浸透圧（Causton ソルビトール 15 分）,HOG1:+:HOT1|SKO1|MSN2/4;PBS2:+:HOT1|SKO1|MSN2/4;SSK1:-:HOT1|SKO1;SHO1:+:HOT1|SKO1,同上
+過酸化水素（Gasch 20 分）,YAP1:+:YAP1;SKN7:+:SKN7;MSN2/4:+:MSN2/4,酸化で Yap1・Skn7 が直接活性化する
+過酸化水素（Causton 20 分）,YAP1:+:YAP1;SKN7:+:SKN7;MSN2/4:+:MSN2/4,同上
+メナジオン（Gasch 20 分）,YAP1:+:YAP1;SKN7:+:SKN7;MSN2/4:+:MSN2/4,同上
+ジアミド（Gasch 20 分）,YAP1:+:YAP1;MSN2/4:+:MSN2/4,同上
+窒素飢餓（Gasch 1 時間）,TORC1:-:GLN3|GAT1|SFP1|MSN2/4;GLN3:+:GLN3;GAT1:+:GAT1,TORC1 の不活性化で Gln3・Gat1 が働き、Sfp1 が止まる
+アミノ酸飢餓（Gasch 1 時間）,GCN2:+:GCN4;GCN4:+:GCN4,Gcn2 → eIF2α のリン酸化 → GCN4 の翻訳
+アミノ酸飢餓（Hardwick 30 分）,GCN2:+:GCN4;GCN4:+:GCN4,同上
+ラパマイシン（Hardwick 30 分）,TORC1:-:GLN3|GAT1|SFP1|MSN2/4;FPR1:+:GLN3|GAT1|SFP1|MSN2/4,ラパマイシン–Fpr1 が TORC1 を止める
+ラパマイシン（Hardwick 60 分）,TORC1:-:GLN3|GAT1|SFP1|MSN2/4;FPR1:+:GLN3|GAT1|SFP1|MSN2/4,同上
+定常期へ（Gasch 12 時間）,SNF1 複合体:+:CAT8|ADR1|MIG1;PKA:-:MSN2/4|GIS1;RIM15:+:MSN2/4|GIS1,グルコースが尽きて Snf1 が働き、PKA が止まる
+DTT（Gasch 60 分）,IRE1:+:HAC1;HAC1:+:HAC1,小胞体ストレスで Ire1 が HAC1 mRNA を切り継ぐ

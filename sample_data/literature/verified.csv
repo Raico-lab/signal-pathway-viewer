@@ -1,0 +1,7 @@
+source_protein,target_protein,interaction_type,effect,direct,condition,pmids,evidence,confidence,status,note,verified_on,verified_note,partner,site,evidence_kind,necessity,redundant_with,strength,layer,timing,fill_pmid,fill_evidence
+SAK1,SNF1,phosphorylation,activate,direct,グルコース飢餓,12906789,,high,new,Upstream kinase for SNF1,2026-10-02,要旨: Elm1 は SNF1 複合体の 3 つの上流キナーゼの 1 つで、Thr210 のリン酸化で活性化する（Sak1・Tos3 も上流キナーゼとして記載）,,,genetic,,ELM1;TOS3,,activity,,12906789,
+TOS3,SNF1,phosphorylation,activate,direct,グルコース飢餓,12906789,,high,new,Upstream kinase for SNF1,2026-10-02,要旨: 同上（3 つの上流キナーゼの 1 つ）,,,genetic,,ELM1;SAK1,,activity,,12906789,
+ELM1,SNF1,phosphorylation,activate,direct,グルコース飢餓,12906789,,high,new,Upstream kinase for SNF1,2026-10-02,要旨: Elm1 が SNF1 複合体を活性化し、Thr210 のリン酸化と相関,,T210,in_vitro;genetic,,SAK1;TOS3,,activity,,12906789,
+GLC7,SNF1,dephosphorylation,inhibit,direct,,11486005,,medium,new,Inactivation of Snf1,2026-10-02,要旨: Glc7 の調節サブユニット Reg1 を欠く細胞では Snf1 の Thr210 が常にリン酸化される（Reg1-Glc7 が Snf1 を不活性化）,REG1,T210,in_vivo,,,,activity,,11486005,
+SNF1,CYR1,phosphorylation,inhibit,direct,,26309257,,high,new,Cross-talk between SNF1 and PKA,2026-10-02,要旨: Snf1 が Cyr1 をリン酸化し、cAMP と PKA 依存の転写を負に制御する,,,in_vivo,,,,activity,,26309257,
+PHO85,PHO4,phosphorylation,inhibit,direct,,9732266,,high,correct,Corrected from previous erroneous activate state。追加の根拠（partner・evidence_kind）: PMID 8539622;9732266,2026-10-02,要旨: Pho4 のリン酸化は輸入受容体 Pse1 との結合を妨げ、核への輸入を抑える（Pho80-Pho85 によるリン酸化）,PHO80,,in_vivo;in_vitro,,,,localization,,9732266,

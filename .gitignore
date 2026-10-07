@@ -1,0 +1,28 @@
+.venv/
+build/
+dist/
+__pycache__/
+*.pyc
+.DS_Store
+# 公開データベースの元データ（容量が大きいため管理しない。入手方法は docs/DATA_SOURCES.md）
+raw_data/
+
+# Claude Code の個人設定（自動コミットのフックなど）
+.claude/settings.local.json
+
+# 手元で取得した大きなデータ（git では管理しない）
+deleteome_all_mutants_ex_wt_var_controls.rtf
+
+# 別の AI から受け取った回答の元ファイル（中身は sample_data/literature/unverified/ に CSV で保存してある）
+まとめ*.rtf
+複合体*.rtf
+archive/raw_data/
+
+# 手で取ってきた結果などのメモ（名前に Windows で使えない「:」が入ることがあり、GitHub の Windows のビルドが止まる）
+/*.rtf
+
+# ブラウザ版の書き出し先（tools/build_web.py が作る）
+web_dist/
+
+# 調べ物の中間ファイル（tools/spell_catalog.py などの既定の出力先。PATHWAYS_RESEARCH_DIR で変えられる）
+scratch/

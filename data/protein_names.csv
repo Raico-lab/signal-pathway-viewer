@@ -1,0 +1,35 @@
+name,gene,note
+iso-1-cytochrome c,CYC1,S288C でイソ 1 型シトクロム c をコードするのは CYC1 だけ（イソ 2 型は CYC7）
+cytochrome c1,CYT1,シトクロム c1 の遺伝子は CYT1 だけ
+invertase,SUC2,S288C のインベルターゼの遺伝子は SUC2 だけ
+arginyltransferase,ATE1,アルギニル転移酵素の遺伝子は ATE1 だけ
+arginyl-tRNA-protein transferase,ATE1,同上
+twinfilin,TWF1,ツインフィリンの遺伝子は TWF1 だけ
+5-aminolevulinate synthase,HEM1,ALA 合成酵素の遺伝子は HEM1 だけ
+ALAS,HEM1,同上（ALA synthase の略）
+mtClpX,MCX1,ミトコンドリアの ClpX の遺伝子は MCX1 だけ
+acetoacetyl-CoA thiolase,ERG10,アセトアセチル CoA チオラーゼの遺伝子は ERG10 だけ
+"fructose-1,6-bisphosphatase",FBP1,"フルクトース 1,6-ビスリン酸分解酵素の遺伝子は FBP1 だけ"
+AMP deaminase,AMD1,AMP デアミナーゼの遺伝子は AMD1 だけ
+dihydrolipoamide dehydrogenase,LPD1,ジヒドロリポアミド脱水素酵素（E3）の遺伝子は LPD1 だけ
+lipoamide dehydrogenase,LPD1,同上
+tau131,TFC4,TFIIIC の τ131 サブユニット（SGD の別名は空白入りの「tau 131」）
+tau95,TFC1,TFIIIC の τ95 サブユニット（SGD の別名は「tau 95」）
+ALA synthase,HEM1,ALA 合成酵素（HEM1 だけ）
+zeta-COP,RET3,coatomer の ζ サブユニット（RET3 だけ）
+Nt-amidase,NTA1,N 末端アミダーゼ（NTA1 だけ。27791147）
+ATP synthase delta subunit,ATP16,ATP 合成酵素の δ サブユニット（ATP16 だけ）
+F1 beta subunit,ATP2,F1 の β サブユニット（ATP2 だけ）
+F1 gamma subunit,ATP3,F1 の γ サブユニット（ATP3 だけ）
+beta-tubulin,TUB2,β チューブリン（TUB2 だけ。α は TUB1・TUB3 の 2 つなので使わない）
+cytochrome c heme lyase,CYC3,シトクロム c ヘムリアーゼ（CYC3 だけ。c1 のヘムリアーゼは CYT2）
+topoisomerase II,TOP2,II 型トポイソメラーゼ（TOP2 だけ）
+cytochrome c oxidase subunit VII,COX7,シトクロム c 酸化酵素のサブユニット VII
+subunit VIIa,COX9,シトクロム c 酸化酵素のサブユニット VIIa
+subunit VIII,COX8,シトクロム c 酸化酵素のサブユニット VIII
+NADPH-P-450 reductase,NCP1,P450 還元酵素（NCP1 だけ）
+NADPH-cytochrome P450 reductase,NCP1,同上
+lanosterol-C14-demethylase,ERG11,ラノステロール 14α 脱メチル化酵素（ERG11 だけ）
+ETFalpha,AIM45,ETF の α サブユニット（AIM45 のオルソログの説明）
+ETFbeta,CIR1,ETF の β サブユニット（CIR1）
+SDHB,SDH2,コハク酸脱水素酵素の鉄硫黄サブユニット（ヒトの名前。酵母では SDH2 だけ）

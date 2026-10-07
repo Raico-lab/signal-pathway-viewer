@@ -1,0 +1,77 @@
+key,group,label,yeastract,match,description
+unstressed,通常の増殖,通常の増殖,,通常時;unstressed,ストレスのない富栄養の培地で、対数増殖している状態。ほかの条件と比べるときの対照
+g1,細胞周期,G1 期,,G1;G1 期;G1期;G1/S;START;M/G1,出芽の前の時期。G1 サイクリン（Cln1-3）と Cdc28 が START を越えさせる
+s_phase,細胞周期,S 期,,S 期;S期;G1/S;S/G2;S・G2;複製の終結,DNA を複製する時期。S 期サイクリン（Clb5・Clb6）が働く
+g2,細胞周期,G2 期,,G2;G2 期;G2期;G2/M;S/G2;S・G2,複製のあと、分裂期に入る前の時期
+m_phase,細胞周期,分裂期（M 期）,,分裂期;M 期;M期;G2/M;分裂前期;分裂中期;分裂後期;後期の開始;後期の始;後期の初め;後期の中;後期への;後期 II;中期;紡錘体;動原体;FEAR;SPOC;mitosis;mitotic,染色体を分ける時期（前期・中期・後期）。分裂期サイクリン（Clb1-4）と Cdc28、APC-Cdc20 が働く
+mitotic_exit,細胞周期,分裂期の終わり・細胞質分裂,,分裂期の終わり;M 期の終わり;分裂期脱出;MEN;細胞質分裂;終期;mitotic exit;cytokinesis,分裂期を抜けて細胞が分かれる時期。MEN と Cdc14 の放出、APC-Cdh1 が働く
+cell_cycle_sync,細胞周期,細胞周期の同調（時期は問わない）,Cell cycle/morphology / Cell cycle synchronized,細胞周期,α 因子などで細胞周期をそろえた細胞を、時間を追って調べたもの
+biofilm,バイオフィルム,バイオフィルムでの増殖,Biofilm formation / Growth As Biofilm,バイオフィルム,表面に付着した細胞の集団（バイオフィルム）として増える状態
+alt_carbon,炭素源,代替炭素源,Carbon source quality/availability / Alternative carbon source,ガラクトース;galactose;代替炭素源,グルコース以外の発酵できる糖（ガラクトース・ショ糖・マルトースなど）を炭素源にした培養
+carbon_starvation,炭素源,炭素源飢餓,Carbon source quality/availability / Carbon source starvation,グルコース飢餓;グルコース枯渇;炭素源飢餓,炭素源を除いた、または使い切った状態
+diauxic_shift,炭素源,ジオーキシックシフト,Carbon source quality/availability / Diauxic shift,ジオーキシ;diauxic,グルコースを使い切り、エタノールなどを呼吸で使う代謝へ切り替わる時期
+glucose_limitation,炭素源,グルコース制限,Carbon source quality/availability / Glucose limitation,グルコース制限;低グルコース,グルコースが少ない状態（低濃度の培地、グルコースを制限したケモスタットなど）。SNF1 が働く
+glucose_repletion,炭素源,グルコースの再添加,Carbon source quality/availability / Glucose repletion,グルコース添加;グルコースの再添加,飢餓・制限の後にグルコースを加え直した直後。PKA が働く
+nonfermentable,炭素源,非発酵性炭素源,Carbon source quality/availability / Non-fermentable carbon source,非発酵;グリセロール;エタノール,グリセロール・エタノール・酢酸など発酵できない炭素源での培養（呼吸が必要）
+stationary,炭素源,定常期,Carbon source quality/availability / Stationary phase cells,定常期;stationary,栄養を使い切って増殖が止まった定常期の細胞
+filamentous,細胞周期・形態,糸状成長,Cell cycle/morphology / Filamentous growth,糸状,細胞が伸びて連なる糸状の成長（窒素の不足などで起こる）
+invasive,細胞周期・形態,侵入性増殖,Cell cycle/morphology / Invasive growth,侵入性,半数体の細胞が寒天培地の中にもぐり込んで増える成長
+mating,細胞周期・形態,接合,Cell cycle/morphology / Mating,フェロモン;接合;pheromone,接合フェロモン（α 因子・a 因子）への応答と接合。フェロモン応答の MAPK 経路が働く
+phenotypic_switching,細胞周期・形態,表現型の切り替え,Cell cycle/morphology / Phenotypic switching,表現型の切り替え,白色型・不透明型などの表現型の切り替え（主にカンジダの記録）
+pseudohyphal,細胞周期・形態,偽菌糸成長,Cell cycle/morphology / Pseudohyphal growth,偽菌糸,窒素の飢餓などで、二倍体が細長い細胞の鎖を作る成長
+pseudohyphal_hyphal,細胞周期・形態,偽菌糸・菌糸成長,Cell cycle/morphology / Pseudohyphal/Hyphal Growth,菌糸成長,偽菌糸・菌糸を作る成長（主にカンジダの記録）
+solid_media,細胞周期・形態,固形培地,Cell cycle/morphology / Solid media,固形培地,寒天などの固形培地の上での増殖
+sporulation,細胞周期・形態,胞子形成,Cell cycle/morphology / Sporulation,胞子形成;減数分裂,窒素と発酵できる炭素源の欠乏で、二倍体が減数分裂して胞子を作る過程
+quorum_sensing,細胞周期・形態,クオラムセンシング,Cell cycle/morphology / Quorum sensing,クオラム,細胞の密度に応じて出るシグナル（芳香族アルコールなど）への応答
+co2,ヒトの体内環境,CO2 濃度,Human niche conditions / CO2 Concentration,CO2,高い二酸化炭素濃度（ヒトの体内を模した条件。主にカンジダの記録）
+epithelia,ヒトの体内環境,上皮,Human niche conditions / Epithelia,上皮,上皮細胞との接触（ヒトの体内を模した条件。主にカンジダの記録）
+kidney,ヒトの体内環境,腎臓,Human niche conditions / Kidney,腎臓,腎臓への感染（主にカンジダの記録）
+peritoneal,ヒトの体内環境,腹膜感染,Human niche conditions / Peritoneal infection,腹膜,腹膜への感染（主にカンジダの記録）
+phagocytosed,ヒトの体内環境,貪食された細胞,Human niche conditions / Phagocytosed cells,貪食,マクロファージなどに貪食された細胞（主にカンジダの記録）
+serum,ヒトの体内環境,血清,Human niche conditions / Serum,血清,血清の添加（ヒトの体内を模した条件。主にカンジダの記録）
+gi_tract,ヒトの体内環境,消化管への定着,Human niche conditions / GI tract colonization,消化管,消化管への定着（主にカンジダの記録）
+in_vitro,試験管内,試験管内,In vitro / In vitro,試験管内;in vitro,精製したタンパク質や DNA を使った試験管内の実験
+calcium,イオン・金属・リン酸・硫黄・ビタミン,カルシウムシグナル,Ion/metal/phosphate/sulfur/vitamin availability / Calcium signalling,カルシウム,カルシウムの添加など、カルシウムのシグナル（カルシニューリン → Crz1）が働く条件
+copper_limitation,イオン・金属・リン酸・硫黄・ビタミン,銅の制限,Ion/metal/phosphate/sulfur/vitamin availability / Copper limitation,銅,銅の欠乏
+iron_limitation,イオン・金属・リン酸・硫黄・ビタミン,鉄の制限,Ion/metal/phosphate/sulfur/vitamin availability / Iron limitation,鉄の制限;鉄欠乏;低鉄,鉄の欠乏（鉄キレート剤の添加など）。Aft1・Aft2 が働く
+iron_repletion,イオン・金属・リン酸・硫黄・ビタミン,鉄の再添加,Ion/metal/phosphate/sulfur/vitamin availability / Iron repletion,鉄の再添加,鉄の欠乏の後に鉄を加え直した状態、または鉄の多い状態
+phosphate_limitation,イオン・金属・リン酸・硫黄・ビタミン,リン酸の制限,Ion/metal/phosphate/sulfur/vitamin availability / Phosphate limitation,低リン酸;リン酸欠乏;リン酸の制限;リン酸飢餓,無機リン酸の欠乏。PHO 経路（Pho81 → Pho85 の阻害 → Pho4）が働く
+phosphate_repletion,イオン・金属・リン酸・硫黄・ビタミン,リン酸の再添加,Ion/metal/phosphate/sulfur/vitamin availability / Phosphate repletion,高リン酸;リン酸の再添加,リン酸の欠乏の後にリン酸を加え直した状態
+potassium,イオン・金属・リン酸・硫黄・ビタミン,カリウムの飢餓・制限,Ion/metal/phosphate/sulfur/vitamin availability / Potassium starvation/limitation,カリウム,カリウムの欠乏・制限
+sulfur_limitation,イオン・金属・リン酸・硫黄・ビタミン,硫黄の制限,Ion/metal/phosphate/sulfur/vitamin availability / Sulfur limitation,硫黄,硫黄源の欠乏。Met4 が働く
+vitamin_limitation,イオン・金属・リン酸・硫黄・ビタミン,ビタミンの制限,Ion/metal/phosphate/sulfur/vitamin availability / Vitamin limitation,ビタミン,ビタミン（チアミン・ビオチンなど）の欠乏
+zinc_limitation,イオン・金属・リン酸・硫黄・ビタミン,亜鉛の制限,Ion/metal/phosphate/sulfur/vitamin availability / Zinc limitation,亜鉛の制限;亜鉛欠乏;低亜鉛,亜鉛の欠乏。Zap1 が働く
+zinc_repletion,イオン・金属・リン酸・硫黄・ビタミン,亜鉛の再添加,Ion/metal/phosphate/sulfur/vitamin availability / Zinc repletion,亜鉛の再添加,亜鉛の欠乏の後に亜鉛を加え直した状態、または亜鉛の多い状態
+magnesium,イオン・金属・リン酸・硫黄・ビタミン,マグネシウム飢餓,Ion/metal/phosphate/sulfur/vitamin availability / Magnesium starvation,マグネシウム,マグネシウムの欠乏
+lipid,脂質,脂質の添加,Lipid supplementation / Lipid supplementation,脂質;イノシトール,脂肪酸・ステロールなど脂質の添加（オレイン酸によるペルオキシソームの誘導など）
+adenine_limitation,窒素源,アデニンの制限,Nitrogen source quality/availability / Adenine limitation,アデニン,アデニンの欠乏。Bas1・Pho2 によるプリン合成の遺伝子が働く
+alt_nitrogen_carbon,窒素源,代替の窒素源・炭素源,Nitrogen source quality/availability / Alternative nitrogen and carbon sources,代替の窒素源・炭素源,窒素源と炭素源の両方を変えた培養
+alt_nitrogen,窒素源,代替窒素源,Nitrogen source quality/availability / Alternative nitrogen sources,代替窒素源;プロリン,アンモニウム・グルタミン以外の質の低い窒素源（プロリン・尿素・アラントインなど）での培養。窒素カタボライト抑制が解け、Gln3・Gat1 が働く
+amino_acid_repletion,窒素源,アミノ酸の再添加,Nitrogen source quality/availability / Amino acid repletion,アミノ酸の再添加;アミノ酸添加,アミノ酸の欠乏の後にアミノ酸を加え直した状態、またはアミノ酸の添加
+amino_acid_starvation,窒素源,アミノ酸の飢餓・制限,Nitrogen source quality/availability / Amino acid starvation/limitation,アミノ酸飢餓;アミノ酸欠乏;アミノ酸の制限,アミノ酸の欠乏や、3-アミノトリアゾールなどによるアミノ酸合成の阻害。Gcn2 → Gcn4 の一般アミノ酸制御が働く
+nitrogen_starvation,窒素源,窒素の飢餓・制限,Nitrogen source quality/availability / Nitrogen starvation/limitation,窒素飢餓;窒素欠乏;TORC1 が働かない,窒素源の欠乏・制限。TORC1 が止まり、Gln3・Gat1 やオートファジーが働く
+hyperoxia,酸素,高酸素,Oxygen availability / Hyperoxia,高酸素,高い酸素濃度
+hypoxia,酸素,低酸素・無酸素,Oxygen availability / Hypoxia/anoxia,低酸素;無酸素;嫌気,低酸素・無酸素（嫌気）。ヘム・ステロールの合成が下がり、Rox1・Upc2 などが働く
+pathogenicity,病原性,病原性,Pathogenicity / Pathogenicity,病原性,病原性に関わる条件（主にカンジダの記録）
+alkaline,ストレス,アルカリストレス,Stress / Alkaline stress,アルカリ,アルカリ性の培地。Rim101 経路・カルシニューリン経路が働く
+cell_wall,ストレス,細胞壁ストレス,Stress / Cell wall stress,細胞壁,細胞壁を傷つける条件（カルコフロールホワイト・コンゴーレッド・ザイモリアーゼなど）。Pkc1 → Slt2 の細胞壁の経路が働く
+cold,ストレス,低温ショック,Stress / Cold shock,低温,低温への移し替え
+drug,ストレス,薬剤・化学物質,Stress / Drug/chemical stress exposure,薬剤;ラパマイシン;rapamycin;化学物質,薬剤・化学物質の添加（ラパマイシン・抗真菌薬・カフェインなど）
+rapamycin,ストレス,ラパマイシン,,,ラパマイシンの添加。FKBP12（Fpr1）と結合して TORC1 を止める。窒素飢餓に近い応答（リボソーム合成の低下、Gln3・Msn2/4 の核移行、オートファジー）が起こる。YEASTRACT+ にはない分類で、発現・リン酸化のデータに使う（YEASTRACT+ の記録では「薬剤・化学物質」に入る）
+genotoxic,ストレス,DNA 損傷,Stress / Genotoxic stress,DNA 損傷;DNA損傷,DNA を傷つける条件（MMS・ヒドロキシ尿素・紫外線など）。DNA 損傷のチェックポイント（Mec1 → Rad53）が働く
+heat,ストレス,熱ショック,Stress / Heat shock,熱,高温への移し替え（熱ショック）。Hsf1・Msn2/4 が働く
+heme_limitation,ストレス,ヘムの制限,Stress / Heme limitation,ヘム,ヘムの欠乏（ヘム合成の阻害など）。Hap1 などが働く
+metal_stress,ストレス,金属ストレス,Stress / Metal stress,金属ストレス;カドミウム,カドミウム・ヒ素など有害な金属への曝露
+mitochondrial,ストレス,ミトコンドリアの機能不全,Stress / Mitochondrial dysfunction,ミトコンドリア,ミトコンドリアの機能不全（ミトコンドリア DNA の欠失など）。RTG 経路が働く
+nitrosative,ストレス,ニトロソ化ストレス,Stress / Nitrosative stress,ニトロソ,一酸化窒素などによる窒素酸化ストレス
+osmotic,ストレス,浸透圧ストレス,Stress / Osmotic stress,浸透圧,高い浸透圧（塩化ナトリウム・ソルビトールの添加）。HOG 経路（Sln1・Sho1 → Pbs2 → Hog1）が働く
+oxidative,ストレス,酸化ストレス,Stress / Oxidative stress,酸化ストレス;過酸化,過酸化水素・メナジオンなどによる酸化ストレス。Yap1・Skn7 が働く
+ph_stress,ストレス,pH ストレス,Stress / pH stress,pH;酸性,培地の pH の変化（主に酸性）
+polyamine,ストレス,ポリアミンストレス,Stress / Polyamine stress,ポリアミン,ポリアミン（スペルミジンなど）の過剰
+reductive,ストレス,還元ストレス,Stress / Reductive stress,還元ストレス,DTT などの還元剤による還元ストレス
+weak_acid,ストレス,弱酸ストレス,Stress / Weak acid stress,弱酸;酢酸;ソルビン酸,酢酸・ソルビン酸など弱酸の保存料への曝露。War1・Haa1 が働く
+microgravity,ストレス,微小重力,Stress / Microgravity,微小重力,微小重力（宇宙での実験や、それを模した装置）
+light,ストレス,光ストレス,Stress / Light stress,光ストレス,光への曝露
+er,ストレス,小胞体ストレス,,小胞体;unfolded protein;DTT;ツニカマイシン;tunicamycin,小胞体に折りたたまれていないタンパク質がたまる条件（DTT・ツニカマイシンなど）。Ire1 → Hac1 の UPR が働く。YEASTRACT+ にはない分類で、文献の記録から付けている
+na,その他,分類なし,N/A / N/A,,YEASTRACT+ で環境条件が書かれていない記録
+unassigned,その他,未分類,Unassigned / Unassigned,,YEASTRACT+ でまだ分類されていない記録

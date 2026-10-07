@@ -1,0 +1,75 @@
+file	source	target	type	effect	pmid	year	journal	酵母の論文	判定	title
+CWI.csv	SLG1	ROM2	activation	activate	10882119	2000	Mol Cell	no	どちらにも言及なし	A novel ligand of the formyl peptide receptor: annexin I regulates neutrophil extravasation by interacting with the FPR.
+CWI.csv	ROM2	RHO1	activation	activate	10364858	1999	Anaesthesia	no	どちらにも言及なし	Peri-operative silent myocardial ischaemia in patients undergoing lower limb joint replacement surgery: an indicator of postoperative morbidity or mor
+CWI.csv	RHO1	PKC1	activation	activate	9630232	1998	Cell	no	どちらにも言及なし	IHF modulation of Tn10 transposition: sensory transduction of supercoiling status via a proposed protein/DNA molecular spring.
+CWI.csv	PKC1	BCK1	phosphorylation	activate	8810053	1996	J Appl Bacteriol	yes	どちらにも言及なし	Effect of Saccharomyces boulardii against experimental oral infection with Salmonella typhimurium and Shigella flexneri in conventional and gnotobioti
+CWI.csv	BCK1	MKK1	phosphorylation	activate	9393988	1997	Nature	no	どちらにも言及なし	Female scientists wanted -- apply to UK research councils.
+CWI.csv	BCK1	MKK2	phosphorylation	activate	9393988	1997	Nature	no	どちらにも言及なし	Female scientists wanted -- apply to UK research councils.
+CWI.csv	MKK1	SLT2	phosphorylation	activate	8943335	1996	Mol Cell Biol	no	どちらにも言及なし	Targeted disruption of the mouse topoisomerase I gene by camptothecin selection.
+CWI.csv	MKK2	SLT2	phosphorylation	activate	8943335	1996	Mol Cell Biol	no	どちらにも言及なし	Targeted disruption of the mouse topoisomerase I gene by camptothecin selection.
+CWI.csv	SLT2	RLM1	phosphorylation	activate	10196375	1999	Hum Mol Genet	no	どちらにも言及なし	Dysferlin is a plasma membrane protein and is expressed early in human development.
+CWI.csv	SLT2	SWI4	phosphorylation	activate	9685361	1998	J Biol Chem	no	どちらにも言及なし	"Functional significance of the ""signature cysteine"" in helix 8 of the Escherichia coli 4-aminobutyrate transporter from the amine-polyamine-choline su"
+HOG.csv	SLN1	YPD1	phosphorylation	inhibit	9396726	1997	Biochem J	no	どちらにも言及なし	Characterization of a Drosophila phosphorylation-dependent nuclear-localization-signal-binding protein.
+HOG.csv	YPD1	SSK1	phosphorylation	inhibit	9396726	1997	Biochem J	no	どちらにも言及なし	Characterization of a Drosophila phosphorylation-dependent nuclear-localization-signal-binding protein.
+HOG.csv	SSK2	PBS2	phosphorylation	activate	8538749	1996	Nature	no	どちらにも言及なし	Regulation of cell adhesion and anchorage-dependent growth by a new beta 1-integrin-linked protein kinase.
+HOG.csv	SSK22	PBS2	phosphorylation	activate	8538749	1996	Nature	no	どちらにも言及なし	Regulation of cell adhesion and anchorage-dependent growth by a new beta 1-integrin-linked protein kinase.
+HOG.csv	SHO1	STE11	activation	activate	9830025	1998	J Biol Chem	no	どちらにも言及なし	alpha-tocopherol inhibits the respiratory burst in human monocytes. Attenuation of p47(phox) membrane translocation and phosphorylation.
+HOG.csv	PBS2	HOG1	phosphorylation	activate	8621650	1996	J Biol Chem	no	どちらにも言及なし	Mutations in the B subunit of Escherichia coli DNA gyrase that affect ATP-dependent reactions.
+HOG.csv	HOG1	SKO1	phosphorylation	activate	11226175	2001	EMBO J	no	どちらにも言及なし	PIG-M transfers the first mannose to glycosylphosphatidylinositol on the lumenal side of the ER.
+HOG.csv	HOG1	HOT1	phosphorylation	activate	10359789	1999	Proc Natl Acad Sci U S A	no	どちらにも言及なし	Chromosome healing in mouse embryonic stem cells.
+HOG.csv	PTP2	HOG1	dephosphorylation	inhibit	9049335	1995	J Gen Virol	no	どちらにも言及なし	All rabbits immunized with type A influenza virions have a serum haemagglutination-inhibition antibody response biased to a single epitope in antigeni
+HOG.csv	PTP3	HOG1	dephosphorylation	inhibit	9516440	1998	J Biol Chem	no	どちらにも言及なし	The role of the alpha3(VI) chain in collagen VI assembly. Expression of an alpha3(VI) chain lacking N-terminal modules N10-N7 restores collagen VI ass
+PHO.csv	PHO85	PHO4	phosphorylation	inhibit	9732266	1998	Genes Dev	yes	片方だけ言及	Phosphorylation regulates association of the transcription factor Pho4 with its import receptor Pse1/Kap121.
+PHO.csv	PHO81	PHO85	inhibition	inhibit	8156586	1994	Cell	no	どちらにも言及なし	The basics of basal transcription by RNA polymerase II.
+PHO.csv	PHO80	PHO85	binding	activate	7915250	1993	IARC Sci Publ	no	どちらにも言及なし	Proceedings of an international symposium on the health hazards related to exposures to 1,3-butadiene and styrene. Espoo, Finland, 18-21 April 1993.
+PHO.csv	PHO4	PHO84	transcription	activate	8384732	1993	Scand J Infect Dis	no	どちらにも言及なし	Serum HCV RNA levels in patients with chronic hepatitis C given a second course of interferon alpha-2b treatment after relapse following initial treat
+PHO.csv	PHO2	PHO4	binding	activate	8224749	1993	Gen Pharmacol	no	どちらにも言及なし	Biphasic GABA-A receptor-mediated effect on the spontaneous activity of the circular layer in cat terminal ileum.
+PKA.csv	CDC25	RAS2	activation	activate	3034857	1987	J Bacteriol	no	どちらにも言及なし	Four plasmid genes are required for colicin V synthesis, export, and immunity.
+PKA.csv	IRA1	RAS2	inhibition	inhibit	2444390	1987	Contrib Microbiol Immunol	no	どちらにも言及なし	Diagnostic importance of H-antigens in Yersinia enterocolitica and other Yersinia species.
+PKA.csv	IRA2	RAS1	inhibition	inhibit	2444390	1987	Contrib Microbiol Immunol	no	どちらにも言及なし	Diagnostic importance of H-antigens in Yersinia enterocolitica and other Yersinia species.
+PKA.csv	RAS2	CYR1	activation	activate	2848902	1988	J Infect Dis	no	どちらにも言及なし	Human-rhesus reassortant rotavirus vaccines: safety and immunogenicity in adults, infants, and children.
+PKA.csv	CYR1	BCY1	inhibition	inhibit	6308477	1983	Naunyn Schmiedebergs Arch Pharmacol	no	どちらにも言及なし	Purification of the putative calcium channel from skeletal muscle with the aid of [3H]-nimodipine binding.
+PKA.csv	BCY1	TPK1	inhibition	inhibit	3082572	1986	Clin Rheumatol	no	どちらにも言及なし	Massive eosinophilia in rheumatoid arthritis: report of four cases.
+PKA.csv	BCY1	TPK2	inhibition	inhibit	3082572	1986	Clin Rheumatol	no	どちらにも言及なし	Massive eosinophilia in rheumatoid arthritis: report of four cases.
+PKA.csv	BCY1	TPK3	inhibition	inhibit	3082572	1986	Clin Rheumatol	no	どちらにも言及なし	Massive eosinophilia in rheumatoid arthritis: report of four cases.
+PKA.csv	TPK1	MSN2	phosphorylation	inhibit	10075628	1999	Ann Intern Med	no	どちらにも言及なし	Low rate of venous thromboembolism in asymptomatic relatives of probands with factor V Leiden mutation.
+PKA.csv	TPK2	MSN4	phosphorylation	inhibit	10075628	1999	Ann Intern Med	no	どちらにも言及なし	Low rate of venous thromboembolism in asymptomatic relatives of probands with factor V Leiden mutation.
+PKA.csv	YAK1	MSN2	phosphorylation	activate	11433022	2001	Nucleic Acids Res	no	どちらにも言及なし	Unusually wide co-factor tolerance in a metalloenzyme; divalent metal ions modulate endo-exonuclease activity in T5 exonuclease.
+PKA.csv	GPA2	CYR1	activation	activate	10464234	1999	J Bacteriol	no	どちらにも言及なし	Identification of a conserved N-terminal sequence involved in transmembrane signal transduction in EnvZ.
+PKA.csv	GPR1	GPA2	activation	activate	10464234	1999	J Bacteriol	no	どちらにも言及なし	Identification of a conserved N-terminal sequence involved in transmembrane signal transduction in EnvZ.
+PKA.csv	PDE1	BCY1	other	none	6308477	1983	Naunyn Schmiedebergs Arch Pharmacol	no	どちらにも言及なし	Purification of the putative calcium channel from skeletal muscle with the aid of [3H]-nimodipine binding.
+PKA.csv	PDE2	BCY1	other	none	2852554	1988	Zhongguo Yi Xue Ke Xue Yuan Xue Bao	no	どちらにも言及なし	[Effect of intraventricular synthetic ACTH (1-24) on secretion of anterior pituitary hormone and a mechanism of its action].
+SNF1.csv	SAK1	SNF1	phosphorylation	activate	12906789	2003	Curr Biol	yes	両方の遺伝子に言及	Elm1p is one of three upstream kinases for the Saccharomyces cerevisiae SNF1 complex.
+SNF1.csv	TOS3	SNF1	phosphorylation	activate	12906789	2003	Curr Biol	yes	両方の遺伝子に言及	Elm1p is one of three upstream kinases for the Saccharomyces cerevisiae SNF1 complex.
+SNF1.csv	ELM1	SNF1	phosphorylation	activate	12906789	2003	Curr Biol	yes	両方の遺伝子に言及	Elm1p is one of three upstream kinases for the Saccharomyces cerevisiae SNF1 complex.
+SNF1.csv	REG1	GLC7	binding	activate	8157944	1994	J Hypertens	no	どちらにも言及なし	Sensitivity to ischaemic ATP breakdown in different models of cardiac hypertrophy in rats.
+SNF1.csv	GLC7	SNF1	dephosphorylation	inhibit	11486005	2001	J Biol Chem	yes	両方の遺伝子に言及	Regulation of Snf1 kinase. Activation requires phosphorylation of threonine 210 by an upstream kinase as well as a distinct step mediated by the Snf4 
+SNF1.csv	SNF1	MIG1	phosphorylation	inhibit	9341155	1997	J Biol Chem	no	どちらにも言及なし	Transport of rat liver glycine N-methyltransferase into rat liver nuclei.
+SNF1.csv	SNF1	ADR1	phosphorylation	activate	15837851	2005	Occup Environ Med	no	どちらにも言及なし	Arc and resistance welding and tumours of the endocrine glands: a Swedish case-control study with focus on extremely low frequency magnetic fields.
+SNF1.csv	SNF1	CAT8	phosphorylation	activate	12037130	2002	Exp Biol Med (Maywood)	no	どちらにも言及なし	Transforming growth factor-beta1 is responsible for maturation-dependent spontaneous apoptosis of cultured gastric pit cells.
+SNF1.csv	SNF1	CYR1	phosphorylation	inhibit	26309257	2015	J Biol Chem	yes	両方の遺伝子に言及	Snf1 Phosphorylates Adenylate Cyclase and Negatively Regulates Protein Kinase A-dependent Transcription in Saccharomyces cerevisiae.
+SNF1.csv	HXK2	SNF1	binding	inhibit	12138169	2002	J Biol Chem	no	どちらにも言及なし	Subunit exchange of multimeric protein complexes. Real-time monitoring of subunit exchange between small heat shock proteins by using electrospray mas
+TORC1.csv	TOR1	SCH9	phosphorylation	activate	10430940	1999	Proc Natl Acad Sci U S A	no	どちらにも言及なし	Heme oxygenase induction mediates the photoimmunoprotective activity of UVA radiation in the mouse.
+TORC1.csv	TOR1	GAT1	phosphorylation	inhibit	11157775	2001	Genes Dev	no	どちらにも言及なし	RNA interference is mediated by 21- and 22-nucleotide RNAs.
+TORC1.csv	TOR1	GLN3	phosphorylation	inhibit	11157775	2001	Genes Dev	no	どちらにも言及なし	RNA interference is mediated by 21- and 22-nucleotide RNAs.
+TORC1.csv	TCO89	SCH9	phosphorylation	activate	10430940	1999	Proc Natl Acad Sci U S A	no	どちらにも言及なし	Heme oxygenase induction mediates the photoimmunoprotective activity of UVA radiation in the mouse.
+TORC1.csv	GTR1	TOR1	binding	activate	20581414	2010	J Neurol Neurosurg Psychiatry	no	どちらにも言及なし	Neurological picture: Cranial neuropathy in the blue rubber bleb nevus syndrome.
+TORC1.csv	GTR2	TOR1	binding	activate	20581414	2010	J Neurol Neurosurg Psychiatry	no	どちらにも言及なし	Neurological picture: Cranial neuropathy in the blue rubber bleb nevus syndrome.
+TORC1.csv	SIT4	GLN3	dephosphorylation	activate	8626549	1996	J Biol Chem	no	どちらにも言及なし	Folate-targeted, anionic liposome-entrapped polylysine-condensed DNA for tumor cell-specific gene transfer.
+TORC1.csv	PPH21	SCH9	dephosphorylation	inhibit	15139360	2004	Surgery	no	どちらにも言及なし	Training on newly deceased patients.
+TORC1.csv	SCH9	RIM15	phosphorylation	inhibit	15582375			no	PMID なし	
+TORC1.csv	SCH9	GIS1	phosphorylation	inhibit	17081989	2006	Mol Cell	no	どちらにも言及なし	Molecular basis of AKAP specificity for PKA regulatory subunits.
+TORC1.csv	NPR1	GLN3	phosphorylation	activate	9799222	1998	EMBO J	no	どちらにも言及なし	Hsp70 exerts its anti-apoptotic function downstream of caspase-3-like proteases.
+TORC1.csv	GCN2	GCN4	phosphorylation	activate	7528205	1994	J Biol Chem	yes	どちらにも言及なし	Interaction between FKBP12-rapamycin and TOR involves a conserved serine residue.
+TORC1.csv	RTG1	RTG3	binding	activate	9562067	1998	J Magn Reson Imaging	no	どちらにも言及なし	Ossification of posterior longitudinal ligaments: evaluation with MRI.
+TORC1.csv	MKS1	RTG1	inhibition	inhibit	12138165	2002	J Biol Chem	no	どちらにも言及なし	Identification of threonine 66 as a functionally critical residue of the interleukin-1 receptor-associated kinase.
+TORC1.csv	ATG1	ATG13	phosphorylation	activate	18838644	2008	Arch Pediatr Adolesc Med	no	どちらにも言及なし	Medical error disclosure among pediatricians: choosing carefully what we might say to parents.
+TORC1.csv	PHO85	PHO4	phosphorylation	inhibit	9732266	1998	Genes Dev	yes	片方だけ言及	Phosphorylation regulates association of the transcription factor Pho4 with its import receptor Pse1/Kap121.
+TORC2.csv	TOR2	YPK1	phosphorylation	activate	12198542	2002	Nature	no	どちらにも言及なし	Metal-insulator transition in chains with correlated disorder.
+TORC2.csv	TOR2	YPK2	phosphorylation	activate	15053886	2004	Eur J Cardiovasc Nurs	no	どちらにも言及なし	Broadening the reach of cardiac rehabilitation to rural and remote Australia.
+TORC2.csv	PKH1	YPK1	phosphorylation	activate	11533256	2001	Mol Cell Biol	yes	どちらにも言及なし	Functional analysis of the cyclin-dependent kinase inhibitor Pho81 identifies a novel inhibitory domain.
+TORC2.csv	PKH2	YPK2	phosphorylation	activate	11533256	2001	Mol Cell Biol	yes	どちらにも言及なし	Functional analysis of the cyclin-dependent kinase inhibitor Pho81 identifies a novel inhibitory domain.
+TORC2.csv	YPK1	ORM1	phosphorylation	inhibit	18424245	2008	Body Image	no	どちらにも言及なし	Impacts of exposure to images of ideal bodies on male body dissatisfaction: a review.
+TORC2.csv	YPK1	ORM2	phosphorylation	inhibit	18424245	2008	Body Image	no	どちらにも言及なし	Impacts of exposure to images of ideal bodies on male body dissatisfaction: a review.
+TORC2.csv	FPK1	SLM1	phosphorylation	activate	19574391	2009	Science	no	どちらにも言及なし	Ligand-gated chloride channels are receptors for biogenic amines in C. elegans.
+TORC2.csv	SLM1	YPK1	binding	activate	19460965	2009	Science	no	どちらにも言及なし	Germline P granules are liquid droplets that localize by controlled dissolution/condensation.

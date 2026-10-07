@@ -1,0 +1,40 @@
+unit,label,genes,marker_unit,rule,note
+Glucose,グルコース,,,input,入力（富栄養で 1）
+Nitrogen,良い窒素源,,,input,入力（グルタミン・アンモニウムなど。富栄養で 1）
+AminoAcids,アミノ酸,,,input,入力（富栄養で 1）
+Rapamycin,ラパマイシン,FPR1,,input,入力（富栄養で 0）
+Osmotic,高浸透圧,,,input,入力
+Heat,熱,,,input,入力
+Oxidative,酸化,,,input,入力
+CellWall,細胞壁のストレス,,,input,入力
+Calcium,細胞内カルシウム,,,input,入力
+Alkaline,アルカリ,,,input,入力
+EGO,EGO 複合体（Gtr1–Gtr2）,GTR1;GTR2;MEH1;SLM4,GTR1-GTR2,AminoAcids,
+PIB2,Pib2,PIB2,PIB2,Nitrogen,
+TORC1,TORC1,TOR1;TOR2;KOG1;LST8;TCO89,TORC1,EGO and PIB2 and not Rapamycin and not (SNF1 and not Glucose) and not (Osmotic or Heat or Oxidative),EGO と Pib2 は協同して働かせる（28993463）。29698392 は Pib2 を Gtr と独立の経路とする（争いあり）。Snf1 が TORC1 をばらすのはグルコース飢餓のとき（26439012）。ストレスでの低下は一過性（17560372。edges.csv の status が「一過性」のつながりは早い時点だけで効かせる）
+SCH9,Sch9,SCH9,SCH9,TORC1,
+CAMP,cAMP（Gpr1–Gpa2–Cyr1）,GPR1;GPA2;CYR1;RAS1;RAS2,RAS2,Glucose,グルコースは Ras の GTP 型を増やさず、Gpr1–Gpa2 を通して cAMP を上げる（9628870）。目印は RAS2 の行で代用
+PKA,PKA,TPK1;TPK2;TPK3;BCY1,PKA,CAMP and not SLT2,Slt2（Mpk1）が Bcy1 の T129 をリン酸化して PKA を抑える。TORC1 は Sch9 を介してこれを防ぐ。一部の基質に対してだけ（20702584）
+SNF1,Snf1,SNF1;SNF4;GAL83;SIP1;SIP2,SNF1,not Glucose or Alkaline or Oxidative or not TORC1,Na+ でも働くが、ソルビトール・熱では働かない（17438333）。浸透圧の入力は Na+ と区別していないので入れない
+MIG1,Mig1（核）,MIG1,MIG1,not SNF1,
+RIM15,Rim15,RIM15,RIM15,not PKA or not SCH9,
+GIS1,Gis1,GIS1,GIS1,RIM15,
+MSN2_4,Msn2/4（核）,MSN2;MSN4,MSN2/4,not PKA or not TORC1 or Heat or Osmotic or Oxidative,
+YAK1,Yak1,YAK1,YAK1,not PKA,
+SFP1,Sfp1（核）,SFP1,SFP1,TORC1 and PKA,
+DOT6_TOD6,Dot6/Tod6（抑制因子として働く）,DOT6;TOD6,DOT6/TOD6,not SCH9,
+MAF1,Maf1（Pol III を抑える）,MAF1,MAF1,not SCH9 or not PKA,
+NPR1,Npr1,NPR1,NPR1,not TORC1,
+GLN3,Gln3（核）,GLN3,GLN3,not TORC1 or SNF1,SNF1 → GLN3 は争いあり（11809814 は Snf1 経由、15911613 は核移行にリン酸化が要るとは言えないとする）
+GAT1,Gat1（核）,GAT1,GAT1,not TORC1,
+RTG1_3,Rtg1/3（核）,RTG1;RTG3;RTG2;MKS1,RTG1/3,not TORC1,
+GCN2,Gcn2,GCN2,GCN2,not AminoAcids or not TORC1 or not Glucose,
+GCN4,Gcn4（翻訳）,GCN4,GCN4,GCN2,
+ATG1,Atg1,ATG1;ATG13,ATG1,not TORC1 or not PKA,
+HOG1,Hog1,HOG1;PBS2;SSK1;SHO1;SLN1,HOG1,Osmotic or Heat or Oxidative or CellWall,
+SLT2,Slt2（細胞壁の経路）,SLT2;PKC1;RHO1;BCK1;MKK1;MKK2;WSC1;MID2,SLT2,CellWall or Heat or not TORC1,
+RLM1,Rlm1,RLM1,RLM1,SLT2,
+CALCINEURIN,カルシニューリン,CNA1;CNA2;CNB1,calcineurin,Calcium or Alkaline,
+CRZ1,Crz1（核）,CRZ1,CRZ1,CALCINEURIN,
+HSF1,Hsf1,HSF1,HSF1,Heat or Oxidative,
+YAP1,Yap1（核）,YAP1,YAP1,Oxidative,

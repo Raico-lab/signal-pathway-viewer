@@ -1,0 +1,227 @@
+/* ブラウザ版の見た目: Qt（Fusion・明るい配色）の部品に近づける。部品は webapp/shim/PyQt6 が作る。 */
+:root {
+  --bg: #efefef;
+  --panel: #ffffff;
+  --text: #1f1f1f;
+  --muted: #6b6b6b;
+  --line: #c4c4c4;
+  --line-soft: #dcdcdc;
+  --accent: #1e88e5;
+  --select: #cfe3fb;
+  --select-strong: #308cc6;
+  --button: #f7f7f7;
+  --button-hover: #ececec;
+  --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: 13px/1.35 var(--font); }
+body.busy, body.busy * { cursor: progress !important; }
+body.dragging-h, body.dragging-h * { cursor: col-resize !important; user-select: none; }
+body.dragging-v, body.dragging-v * { cursor: row-resize !important; user-select: none; }
+#app { position: fixed; inset: 0; display: flex; }
+
+/* ---- 読み込みの画面 ---- */
+#boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f5f6f8; z-index: 1000000; }
+.boot-card { width: min(520px, calc(100vw - 32px)); background: #fff; border: 1px solid #dde1e6; border-radius: 10px; padding: 28px 28px 22px; box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+.boot-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+#boot-step { color: #444; margin-bottom: 10px; min-height: 1.4em; }
+.boot-track { height: 6px; background: #eceff3; border-radius: 3px; overflow: hidden; }
+#boot-bar { height: 100%; width: 2%; background: var(--accent); transition: width .3s; }
+.boot-note { color: #888; font-size: 12px; margin-top: 12px; }
+#boot-detail { display: none; white-space: pre-wrap; font-size: 11px; color: #b00020; max-height: 200px; overflow: auto; }
+#boot.failed #boot-detail { display: block; }
+#boot.failed #boot-bar { background: #c62828; }
+
+/* ---- 部品の基本 ---- */
+.qw { position: relative; }
+/* Qt と同じく、入れ物は中身の最小の大きさより縮めない（CSS の min-*: auto）。スクロールするもの・地図・分割の中身は縮められる */
+.qscroll-frame, .qwebview, .qtabs, .qsplitter, .qtab-page, .qsplitter > .qw, .qmain-center > .qw, .qwindow-body > .qw { min-width: 0; min-height: 0; }
+.qw.has-layout { display: flex; flex-direction: column; }
+.qw.floating { position: absolute; z-index: 50; }
+.qw.disabled { opacity: .55; pointer-events: none; }
+.qw.shrink { min-width: 0 !important; overflow: hidden; text-overflow: ellipsis; }
+.ql { display: flex; flex: 1 1 auto; }
+.ql-v { flex-direction: column; }
+.ql-h { flex-direction: row; align-items: center; }
+.ql-form { display: grid; grid-template-columns: max-content 1fr; gap: 8px 10px; align-items: center; }
+.qform-label { text-align: right; color: #333; }
+.qform-field { display: flex; min-width: 0; }
+.qform-field > .qw { flex: 1 1 auto; }
+.ql-stretch { min-width: 0; min-height: 0; }
+
+.qlabel { white-space: pre; }
+.qlabel.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qlabel.rich { white-space: normal; }
+.qlabel.selectable { user-select: text; }
+.qlabel.shrink { white-space: nowrap; }
+
+button { font: inherit; color: inherit; }
+.qbutton { background: linear-gradient(#fdfdfd, #f1f1f1); border: 1px solid #b9b9b9; border-radius: 4px; padding: 3px 10px; min-height: 24px; cursor: default; white-space: nowrap; }
+.qbutton:hover:not(:disabled) { background: linear-gradient(#ffffff, #e9e9e9); border-color: #a0a0a0; }
+.qbutton:active:not(:disabled) { background: #e0e0e0; }
+.qbutton:disabled { color: #a8a8a8; border-color: #d2d2d2; background: #f6f6f6; }
+.qbutton.has-menu::after { content: " ▾"; color: #666; }
+.qbutton.flat { background: none; border-color: transparent; }
+.qtoolbutton { background: none; border: 1px solid transparent; border-radius: 3px; padding: 2px 4px; cursor: default; white-space: nowrap; display: flex; align-items: center; text-align: left; }
+.qtoolbutton:not(.autoraise) { border-color: #c8c8c8; background: #f7f7f7; }
+.qtoolbutton:hover { background: #ececec; }
+
+.qcheck { display: inline-flex; align-items: center; gap: 5px; cursor: default; white-space: nowrap; user-select: none; }
+.qcheck input { margin: 0; }
+
+input.qlineedit, input.qspin, select.qcombo, .qcombo-edit input, textarea.qtextedit {
+  font: inherit; color: inherit; border: 1px solid #b9b9b9; border-radius: 3px; background: #fff; min-height: 24px;
+}
+input.qlineedit { padding: 2px 6px; min-width: 60px; width: 100%; }
+input.qlineedit:focus, input.qspin:focus, select.qcombo:focus, textarea.qtextedit:focus, .qcombo-edit input:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(30,136,229,.18);
+}
+input.qspin { width: 52px; padding: 2px 2px 2px 6px; }
+select.qcombo { padding: 2px 4px; max-width: 100%; }
+.qcombo-edit { display: flex; }
+.qcombo-edit input { width: 100%; padding: 2px 6px; }
+textarea.qtextedit { padding: 4px 6px; resize: vertical; }
+.qw.disabled input, .qw.disabled select { background: #f4f4f4; }
+
+.frame-box { border: 1px solid var(--line-soft); border-radius: 4px; background: #fafafa; }
+.frame-hline { border-top: 1px solid var(--line); height: 1px; }
+.frame-vline { border-left: 1px solid var(--line); width: 1px; }
+
+.qgroup { border: 1px solid var(--line-soft); border-radius: 5px; padding: 0; display: flex; flex-direction: column; background: rgba(255,255,255,.35); }
+.qgroup-title { font-weight: 600; padding: 4px 8px 0; color: #333; }
+.qgroup-body { display: flex; flex-direction: column; flex: 1 1 auto; }
+.qgroup-body > .ql { padding: 6px 8px 8px !important; }
+
+/* ---- スクロールする部品 ---- */
+.qscroll-frame { display: flex; flex-direction: column; border: 1px solid var(--line); background: #fff; }
+.qviewport { flex: 1 1 auto; overflow: auto; min-height: 0; min-width: 0; position: relative; }
+.qscrollarea { border: none; background: transparent; }
+.qscrollarea > .qviewport > .qw { min-height: 100%; }
+.qscrollarea.resizable > .qviewport > .qw { width: 100%; }
+.qscrollarea > .qviewport { overflow-x: hidden; }
+
+/* ---- 説明欄（HTML） ---- */
+.qtextbrowser { background: #fff; }
+.qtext-content { padding: 6px 8px; user-select: text; overflow-wrap: anywhere; }
+.qtext-content h1 { font-size: 20px; margin: 4px 0 8px; }
+.qtext-content h2 { font-size: 18px; margin: 6px 0 6px; }
+.qtext-content h3 { font-size: 15px; margin: 12px 0 4px; }
+.qtext-content h4 { font-size: 13px; margin: 12px 0 4px; }
+.qtext-content p { margin: 6px 0; }
+.qtext-content ul, .qtext-content ol { margin: 4px 0; padding-left: 22px; }
+.qtext-content li { margin: 1px 0; }
+.qtext-content a { color: #0b57d0; text-decoration: underline; cursor: pointer; }
+.qtext-content table { border-collapse: separate; }
+.qtext-content td { vertical-align: top; }
+.qtext-content code { background: #f1f3f4; padding: 0 3px; border-radius: 3px; }
+
+/* ---- 一覧・木 ---- */
+.qlist .qviewport, .qtree .qviewport { outline: none; }
+.q-item { display: flex; align-items: center; gap: 5px; padding: 2px 6px; white-space: nowrap; cursor: default; user-select: none; min-height: 21px; }
+.q-item:hover { background: #f1f6fd; }
+.q-item.selected, .q-item.selected:hover { background: var(--select); }
+.q-item.disabled { color: #9e9e9e; }
+.q-item input { margin: 0; }
+.qlist.alternate .q-item:nth-child(even) { background: #f7f7f7; }
+.qtree-row { gap: 4px; }
+.qtree-arrow { width: 12px; flex: 0 0 12px; color: #666; text-align: center; cursor: pointer; font-size: 11px; }
+.qtree-text { overflow: hidden; text-overflow: ellipsis; }
+.qtree-header { display: flex; border-bottom: 1px solid var(--line); background: #f5f5f5; }
+.qtree-head { padding: 3px 6px; font-weight: 600; }
+
+/* ---- 表 ---- */
+.qtable { background: #fff; }
+.qtable-head { overflow: hidden; flex: 0 0 auto; border-bottom: 1px solid var(--line); background: linear-gradient(#fafafa, #ececec); }
+.qtable-head-inner { display: flex; }
+.qtable-hcell { position: relative; flex: 0 0 auto; padding: 3px 6px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-right: 1px solid #d6d6d6; cursor: default; user-select: none; }
+.qtable-hcell:hover { background: #e4e4e4; }
+.qtable-sort { color: #555; font-size: 10px; }
+.qtable-grip { position: absolute; right: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 2; }
+.qtable .qviewport { outline: none; }
+.qtable-spacer { position: relative; }
+.qtable-body { position: absolute; inset: 0; }
+.qtable-row { position: absolute; left: 0; height: 22px; display: flex; white-space: nowrap; cursor: default; user-select: none; }
+.qtable.alternate .qtable-row.odd { background: #f6f7f9; }
+.qtable-row.selected, .qtable.alternate .qtable-row.selected { background: var(--select-strong); color: #fff; }
+.qtable-cell { flex: 0 0 auto; padding: 2px 6px; overflow: hidden; text-overflow: ellipsis; line-height: 18px; }
+
+/* ---- 分割・タブ ---- */
+.qsplitter { display: flex; }
+.qsplitter.h { flex-direction: row; }
+.qsplitter.v { flex-direction: column; }
+.qsplitter > .qw { display: flex; flex-direction: column; overflow: hidden; }
+.qsplitter-handle { flex: 0 0 6px; background: transparent; position: relative; }
+.qsplitter.h > .qsplitter-handle { cursor: col-resize; }
+.qsplitter.v > .qsplitter-handle { cursor: row-resize; }
+.qsplitter-handle:hover { background: rgba(30,136,229,.18); }
+.qtabs { display: flex; flex-direction: column; }
+.qtabs-bar { display: flex; gap: 1px; flex: 0 0 auto; padding: 0 2px; position: relative; z-index: 1; overflow-x: auto; scrollbar-width: none; }
+.qtabs-bar::-webkit-scrollbar { display: none; }
+.qtab { border: 1px solid var(--line); border-bottom: none; background: linear-gradient(#f4f4f4, #e3e3e3); padding: 4px 12px; border-radius: 5px 5px 0 0; cursor: default; white-space: nowrap; margin-top: 2px; }
+.qtab.current { background: #fff; margin-top: 0; padding-bottom: 6px; margin-bottom: -1px; font-weight: 600; }
+.qtab:disabled { color: #aaa; }
+.qtabs-stack { flex: 1 1 auto; min-height: 0; border: 1px solid var(--line); background: #fbfbfb; display: flex; flex-direction: column; }
+.qtabs-stack > .qtab-page { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.qtabs-corner { margin-left: auto; display: flex; align-items: center; }
+
+/* ---- メインの窓 ---- */
+.qmainwindow { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.qmain-menubar { flex: 0 0 auto; }
+.qmain-center { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.qmain-center > .qw { flex: 1 1 auto; min-height: 0; }
+.qmain-status { flex: 0 0 auto; }
+.qmenubar { display: flex; gap: 2px; padding: 2px 6px; background: linear-gradient(#fafafa, #ededed); border-bottom: 1px solid #d0d0d0; }
+.qmenubar-item { background: none; border: none; padding: 3px 10px; border-radius: 4px; cursor: default; }
+.qmenubar-item:hover { background: #dfe8f3; }
+.qstatusbar { display: flex; align-items: center; gap: 12px; min-height: 22px; padding: 1px 8px; border-top: 1px solid #d6d6d6; background: #f3f3f3; color: #333; font-size: 12px; }
+.qstatus-msg { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qstatus-perm { flex: 0 1 auto; min-width: 0; display: flex; gap: 8px; color: #666; overflow: hidden; white-space: nowrap; }
+
+/* ---- メニュー・候補 ---- */
+.qmenu { position: fixed; background: #fff; border: 1px solid #b8b8b8; border-radius: 6px; box-shadow: 0 6px 22px rgba(0,0,0,.18); padding: 4px 0; min-width: 160px; }
+.qmenu-item { padding: 4px 18px; white-space: nowrap; cursor: default; }
+.qmenu-item:hover { background: var(--accent); color: #fff; }
+.qmenu-item.disabled { color: #aaa; pointer-events: none; }
+.qmenu-sep { border-top: 1px solid #e3e3e3; margin: 4px 0; }
+.qmenu-widget { display: flex; padding: 2px 4px; }
+.qmenu-widget > .qw { flex: 1 1 auto; }
+.qpopup-list { position: fixed; background: #fff; border: 1px solid #b0bec5; box-shadow: 0 4px 14px rgba(0,0,0,.14); overflow: auto; }
+.qpopup-list .q-item.selected { background: #e3f2fd; }
+
+/* ---- 別の窓・ダイアログ ---- */
+.qwindow { position: fixed; display: flex; flex-direction: column; background: var(--bg); border: 1px solid #9e9e9e; border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.28); overflow: hidden; resize: both; min-width: 260px; min-height: 120px; }
+.qwindow-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 5px 8px 5px 12px; background: linear-gradient(#f6f6f6, #e4e4e4); border-bottom: 1px solid #c8c8c8; cursor: move; user-select: none; }
+.qwindow-title { flex: 1 1 auto; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qwindow-close { border: none; background: none; font-size: 14px; padding: 0 6px; border-radius: 4px; cursor: default; }
+.qwindow-close:hover { background: #e57373; color: #fff; }
+.qwindow-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.qwindow-body > .qw { flex: 1 1 auto; min-height: 0; }
+.qwindow.qdialog { resize: none; max-height: calc(100vh - 20px); }
+.qwindow.qdialog .qwindow-body { padding: 4px; overflow: auto; }
+.qmodal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.18); }
+
+/* ---- 地図（iframe） ---- */
+.qwebview { display: flex; flex-direction: column; background: #fff; }
+.qwebview-frame { flex: 1 1 auto; border: 0; width: 100%; height: 100%; min-height: 0; display: block; }
+
+/* ---- エラーの知らせ ---- */
+#pv-error { position: fixed; right: 12px; bottom: 30px; max-width: min(560px, calc(100vw - 24px)); background: #fff3f3; border: 1px solid #e57373; color: #8e0000; border-radius: 6px; padding: 8px 10px; font-size: 12px; z-index: 2000000; box-shadow: 0 4px 16px rgba(0,0,0,.15); display: none; }
+#pv-error pre { white-space: pre-wrap; max-height: 180px; overflow: auto; margin: 6px 0 0; font-size: 11px; color: #555; }
+#pv-error button { float: right; border: none; background: none; cursor: pointer; }
+
+/* ---- デスクトップアプリのタブ ---- */
+.dl-page { max-width: 1040px; padding: 8px 12px 24px; }
+.dl-page h2 { margin-top: 4px; }
+.dl-cards { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0 8px; }
+.dl-card { flex: 1 1 340px; border: 1px solid #d5dbe2; border-radius: 8px; padding: 14px 16px; background: #fafcff; }
+.dl-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.dl-file { color: #666; font-size: 12px; margin-bottom: 10px; overflow-wrap: anywhere; }
+.qtext-content a.dl-button { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; padding: 6px 16px; border-radius: 5px; font-weight: 600; }
+.qtext-content a.dl-button:hover { background: #1669b8; }
+.dl-howto { font-weight: 700; margin: 14px 0 2px; }
+.dl-card ol { margin: 4px 0 0; padding-left: 20px; }
+.dl-card li { margin: 4px 0; line-height: 1.5; }
+.dl-note { color: #666; font-size: 12px; margin-top: 8px; }
+.dl-small { color: #666; font-size: 12px; }
