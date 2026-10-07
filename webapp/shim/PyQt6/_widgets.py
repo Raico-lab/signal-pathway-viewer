@@ -1288,7 +1288,10 @@ class QLabel(QWidget):
         if not _dom.absent(a):
             ev.preventDefault()
             href = str(a.getAttribute("href") or "")
-            self.linkActivated.emit(href)
+            if getattr(self, "_external", False):   # setOpenExternalLinks(True): Qt と同じく、自分でリンク先を開く
+                _dom.window.open(href, "_blank", "noopener")
+            else:
+                self.linkActivated.emit(href)
 
     def setText(self, text):
         self._text = "" if text is None else str(text)
