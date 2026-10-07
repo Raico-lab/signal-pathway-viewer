@@ -10,11 +10,15 @@ Pathways Viewer 本体は GPLv3（`LICENSE`）です。次の部品を使って�
 | 部品 | 版 | ライセンス | 入手先 |
 |---|---|---|---|
 | PyQt6・PyQt6-WebEngine | 6.11 | GPL-3.0-only（Riverbank Computing） | https://www.riverbankcomputing.com/software/pyqt/ |
-| Qt 6・Qt WebEngine（PyQt6-Qt6・PyQt6-WebEngine-Qt6 に含まれる。Chromium を含む） | 6.11 | LGPL-3.0（Qt WebEngine に含まれる Chromium などは各ライセンス） | https://www.qt.io/ |
+| Qt 6・Qt WebEngine（PyQt6-Qt6・PyQt6-WebEngine-Qt6 に含まれる。Chromium を含む） | 6.11 | LGPL-3.0（全文は `licenses/LGPL-3.0.txt`。LGPL-3.0 が引く GPL-3.0 の全文は `LICENSE`。Qt WebEngine に含まれる Chromium などは各ライセンス） | https://www.qt.io/ （Qt のソース: https://download.qt.io/official_releases/qt/ ） |
 | SQLAlchemy | 2.1 | MIT | https://www.sqlalchemy.org/ |
 | NetworkX | 3.6 | BSD-3-Clause | https://networkx.org/ |
 | PyInstaller（実行ファイルを作るのに使用） | 6.22 | GPL-2.0-or-later（作ったプログラムの配布を認める例外つき） | https://pyinstaller.org/ |
 | Python | 3 | PSF License | https://www.python.org/ |
+
+デスクトップ版は Qt を別のファイル（共有ライブラリ）として同梱しています。LGPL-3.0 の条件のとおり、利用者は同じ版の Qt に差し替えられます。
+
+The desktop version ships Qt as separate shared libraries, so users can replace them with their own build as permitted by LGPL-3.0.
 
 ## 地図の表示（デスクトップ版・ブラウザ版の両方。`tor_app/web/lib/`）
 

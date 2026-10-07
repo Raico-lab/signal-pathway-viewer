@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "このソフトウェアを研究で使った場合は、次の情報で引用してください。If you use this software in your research, please cite it as below. Please also cite the original data sources listed in DATA_LICENSES.md."
+title: "Pathways Viewer for Saccharomyces cerevisiae"
+abstract: "A viewer for regulatory relations between budding yeast genes (signaling and transcription), with literature-checked evidence, condition filters, measured deletion-strain data, and path search between genes."
+authors:
+  - family-names: "Katsukawa"
+    given-names: "Rai"
+license: GPL-3.0-only
+repository-code: "https://github.com/Raico-lab/signal-pathway-viewer"
+url: "https://raico-lab.github.io/pathways-viewer/"
+version: "2026.10.07"
+date-released: "2026-10-07"
+keywords:
+  - "Saccharomyces cerevisiae"
+  - "signaling pathway"
+  - "TOR"
+  - "gene regulatory network"
+  - "visualization"

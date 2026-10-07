@@ -13,7 +13,8 @@ a = Analysis(
     ["main.py"],
     # LICENSE などは GPLv3 で配るために同梱する（アプリの「ヘルプ > このアプリについて」からも案内する）
     datas=[("tor_app/web", "tor_app/web")] + [(f"data/{name}", "data") for name in DATA_FILES]
-          + [(name, ".") for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "DATA_LICENSES.md")],
+          + [(name, ".") for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "DATA_LICENSES.md")]
+          + [("licenses/LGPL-3.0.txt", "licenses")],   # 同梱する Qt（LGPL-3.0）の全文
     hiddenimports=["sqlalchemy.dialects.sqlite"],
     # pandas・numpy・scipy はアプリでは使わない（CSV の読み込みは取り込みの道具だけ。networkx は numpy なしで動く）
     excludes=["tkinter", "matplotlib", "IPython", "pandas", "numpy", "scipy"],

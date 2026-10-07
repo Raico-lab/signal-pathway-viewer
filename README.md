@@ -12,6 +12,9 @@ Copyright (C) 2026 Rai Katsukawa
 無保証です。ほかの部品のライセンスは [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、同梱のデータの出典と利用条件は
 [DATA_LICENSES.md](DATA_LICENSES.md)（データには GPL は及ばず、出典ごとの条件に従う）。
 
+研究で使った場合の引用の仕方は [CITATION.cff](CITATION.cff)（GitHub の「Cite this repository」）。デスクトップ版が同梱する Qt の LGPL-3.0 の全文は
+[licenses/LGPL-3.0.txt](licenses/LGPL-3.0.txt)。
+
 The source code is licensed under the GNU GPL v3 ([LICENSE](LICENSE)). Bundled data are not covered by the GPL; see
 [DATA_LICENSES.md](DATA_LICENSES.md). Third-party components: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
