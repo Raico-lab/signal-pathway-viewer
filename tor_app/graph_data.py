@@ -130,21 +130,29 @@ class PathwayModel:
                 return True
         return False
 
-    def paralog_frames(self, sub: Subgraph, framed: set[int]) -> dict[int, str]:
+    def paralog_frames(self, sub: Subgraph, framed: set[int], bundle_of: dict[int, str]) -> dict[int, str]:
         """パラログの枠（遺伝子 → 枠の id）。複合体と違い、構成要素を地図に加えない: 地図に出ている遺伝子のうち、
-        複合体・まとめの枠に入っていないパラログどうしを囲む（つながった組は 1 つの枠）。段はそろえないので、
-        地図で別々の段になった組は、地図の側（network.js）で枠を描かない。枠の id は "g:" ＋ 組の名前を「・」でつないだもの。"""
-        free = sub.nodes - framed - sub.tx_regs
+        複合体の枠に入っていないパラログどうしを囲む（つながった組は 1 つの枠）。同じ置き場所の遺伝子どうしだけを囲む:
+        ふつうの段・左の TFs 一覧で加えた転写因子の段（一番上）・同じまとめの枠の中（枠の中に入れ子にする）。
+        段はそろえないので、地図で別々の段になった組は、地図の側（network.js）で枠を描かない。
+        枠の id は "g:" ＋ 組の名前を「・」でつないだもの。"""
+        def place(g: int) -> str:
+            return bundle_of.get(g) or ("tx" if g in sub.tx_regs else "")
+        free = sub.nodes - framed
         group: dict[int, set[int]] = {}
         names: dict[int, list[str]] = {}
         for name, genes in self.paralogs.items():
-            shown = [g for g in genes if g in free]
-            if len(shown) < 2:
-                continue
-            merged = set(shown).union(*(group.get(g, set()) for g in shown))
-            merged_names = sorted({name}.union(*(names.get(g, []) for g in merged)))
-            for g in merged:
-                group[g], names[g] = merged, merged_names
+            by_place: dict[str, list[int]] = {}
+            for g in genes:
+                if g in free:
+                    by_place.setdefault(place(g), []).append(g)
+            for shown in by_place.values():
+                if len(shown) < 2:
+                    continue
+                merged = set(shown).union(*(group.get(g, set()) for g in shown))
+                merged_names = sorted({name}.union(*(names.get(g, []) for g in merged)))
+                for g in merged:
+                    group[g], names[g] = merged, merged_names
         return {g: "g:" + "・".join(names[g]) for g in group}
 
     def bundle_type(self, hub: int, gene: int) -> str:
@@ -260,13 +268,16 @@ class PathwayModel:
                                           "color": info[2] if info else "#9e9e9e"}})
                 for g in gs:
                     bundle_of[g] = bid
-        # パラログの枠（組ごとの色の二重線。複合体・まとめに入っていない組だけ）
-        paralog = self.paralog_frames(sub, set(frame) | set(bundle_of))
+        # パラログの枠（組ごとの色の二重線。複合体に入っていない組だけ。まとめの中の組は、まとめの枠の中に入れ子にする）
+        paralog = self.paralog_frames(sub, set(frame), bundle_of)
         for fid in sorted(set(paralog.values())):
             first = fid[2:].split("・")[0]   # 組がつながったときは、名前順で最初の組の色
-            elements.append({"data": {"id": fid, "isComplex": True, "isParalog": True,
-                                      "label": fid[2:], "color": self.category_color(first) if first in self.categories
-                                      else PARALOG_COLOR}})
+            data = {"id": fid, "isComplex": True, "isParalog": True,
+                    "label": fid[2:], "color": self.category_color(first) if first in self.categories else PARALOG_COLOR}
+            inside = {bundle_of.get(g) for g, f in paralog.items() if f == fid}
+            if inside != {None}:
+                data["parent"] = inside.pop()
+            elements.append({"data": data})
         for pid in sorted(sub.nodes):
             p = self.proteins[pid]
             data = {
@@ -292,7 +303,7 @@ class PathwayModel:
             if mates:
                 data["paralogs"] = [f"p{g}" for g in mates]   # 地図にあるパラログの相手（条件で薄くするとき、線のない方は相手に合わせる）
             if pid in bundle_of:
-                data["parent"] = bundle_of[pid]
+                data["parent"] = paralog.get(pid, bundle_of[pid])
                 data["bundled"] = True
             elif pid in frame:
                 data["parent"] = f"c:{frame[pid]}"

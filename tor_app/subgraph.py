@@ -113,12 +113,18 @@ def build_subgraph(adjacency: Adjacency, complexes: dict[str, list[int]], names:
             nodes.update(adjacency.out.get(n, set()))
             nodes.update(adjacency.inc.get(n, set()))
     nodes.update(spec.extra)
-    # 左の TFs 一覧でチェックした転写因子（他の関係で既に表示しているものは、その位置のまま）
+    # パラログ: 組の一方が地図にあれば、もう一方も加える（1 回だけ。加えたものの組はたどらない）
+    shown = set(nodes)
+    for genes in (paralogs or {}).values():
+        if any(g in shown for g in genes):
+            nodes.update(genes)
+    # 左の TFs 一覧でチェックした転写因子（他の関係で既に表示しているものは、その位置のまま）。
+    # TFs として加えたもののパラログの相手も、同じ一番上の段に加える（組の枠で囲めるように）
     tx_regs = spec.trf - nodes
     nodes.update(spec.trf)
-    # パラログ: 組の一方が地図にあれば、もう一方も加える（1 回だけ。加えたものの組はたどらない）
     for genes in (paralogs or {}).values():
-        if any(g in nodes for g in genes):
+        if any(g in tx_regs for g in genes):
+            tx_regs |= set(genes) - nodes
             nodes.update(genes)
     # 下流が多すぎて省いた分は、まとめとしてすべて加える（ほかの経路で表示しているものは除く。2 つの遺伝子の
     # まとめに入るものは名前順で先の方だけ）

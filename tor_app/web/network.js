@@ -305,7 +305,7 @@
   // 複合体・パラログの名札は、枠の中の遺伝子を緑で選んでいるときと、枠そのものを押したときだけ出す。
   // 下流のまとめの名札（「PHO85 の下流 リン酸化 377」など）は、何のまとまりか分かるよういつも出す
   let openFrameId = null;
-  const labelOpen = (c) => c.data("isBundle") || c.id() === openFrameId || c.children().some((m) => pickedSet.has(m.id()));
+  const labelOpen = (c) => c.data("isBundle") || c.id() === openFrameId || membersOf(c).some((m) => pickedSet.has(m.id()));
   function syncComplexLabels() {
     cy.batch(() => cy.nodes("[?isCxLabel]").forEach((l) => {
       const c = cy.getElementById(l.data("of"));
@@ -682,6 +682,8 @@
   // 複合体の構成要素は隣どうしにする。今の位置は使わないので、同じ遺伝子の組なら操作の順序によらず同じ配置になる。
   const WRAP = 10;            // 1 行に並べる最大数（超えたら同じ段の中で折り返す。WRAP 個より多い複合体は枠の中で折り返す）
   const isGene = (n) => !n.data("isComplex") && !n.data("isLabel") && !n.data("isCxLabel");
+  // 枠の中の遺伝子（まとめの枠の中に入れ子にしたパラログの枠の遺伝子も含める）
+  function membersOf(c) { return c.descendants().filter((n) => !n.data("isComplex")); }
 
   // 段の中の隣どうしの隙間・同じ段で折り返したときの行の間隔・段と段の間隔。
   // 折り返しの行は詰め、段と段の間はその倍以上空けて、折り返しと階層の違いを見分けられるようにする
@@ -965,7 +967,7 @@
     return measureCtx.measureText(text).width;
   }
   function placeBundles(horizontal, bb, put) {
-    const bundles = cy.nodes("[?isBundle]").filter((b) => b.children().some((n) => !n.hasClass("filtered")));
+    const bundles = cy.nodes("[?isBundle]").filter((b) => membersOf(b).some((n) => !n.hasClass("filtered")));
     if (!bundles.length) return;
     bb = bb || { x1: 0, x2: 0, y1: 0, y2: 0 };
     const cross = horizontal ? "y" : "x";
@@ -973,28 +975,37 @@
     const list = bundles.toArray().sort((a, b) => (hubAt(a) - hubAt(b)) || a.id().localeCompare(b.id()));
     const LABEL_MAX = COMPLEX_LABEL_PX / COMPLEX_LABEL_MIN_ZOOM;
     const GAP_X = 12, GAP_Y = 10, BETWEEN = 30 + 2 * LABEL_MAX;   // 枠の余白（名札の大きさまで広がる）の分も空ける
+    const PARALOG_PAD = 24;   // 中のパラログの枠（二重線と余白）の分
     const wOf = (n) => (horizontal ? n.height() : n.width()), hOf = (n) => (horizontal ? n.width() : n.height());
     const left = horizontal ? bb.y1 : bb.x1;
     const span = Math.max(1200, horizontal ? bb.y2 - bb.y1 : bb.x2 - bb.x1);
     let along = left, out = (horizontal ? bb.x2 : bb.y2) + 90, deepest = 0;
     list.forEach((b) => {
-      const kids = b.children().filter((n) => !n.hasClass("filtered")).toArray()
+      const kids = membersOf(b).filter((n) => !n.hasClass("filtered")).toArray()
         .sort((x, y) => String(x.data("label")).localeCompare(String(y.data("label"))));
+      // 中のパラログの枠の遺伝子は、続けて並べ、行をまたがないようにする（ひとまとまり unit）
+      const unitOf = (n) => (n.parent().id() !== b.id() ? n.parent().id() : n.id());
+      const units = [];
+      kids.forEach((n) => {
+        const u = units.find((v) => unitOf(v[0]) === unitOf(n));
+        if (u) u.push(n); else units.push([n]);
+      });
+      const unitW = (u) => u.reduce((sum, n) => sum + wOf(n) + GAP_X, 0) + (u.length > 1 ? PARALOG_PAD : 0);
       // 枠の幅: 中身の面積がおおよそ正方形になる幅（地図の幅は超えない）。名前の札より狭くはしない
       const area = kids.reduce((sum, n) => sum + (wOf(n) + GAP_X) * (hOf(n) + GAP_Y), 0);
       // 名札（太字）がはみ出さない幅。名札は縮小すると最大 2 倍の大きさになる（fixComplexLabels）ので、その大きさで測る
       const labelW = textWidth(String(b.data("label")), LABEL_MAX) + 20;
-      const width = Math.max(labelW, Math.max(...kids.map(wOf)) + GAP_X, Math.min(span, Math.sqrt(area) * 1.3));
+      const width = Math.max(labelW, Math.max(...units.map(unitW)), Math.min(span, Math.sqrt(area) * 1.3));
       // 左から詰めて並べ、幅を超えたら次の行へ
       const rows = [[]];
       let x = 0;
-      kids.forEach((n) => {
-        const w = wOf(n) + GAP_X;
+      units.forEach((u) => {
+        const w = unitW(u);
         if (x + w > width && rows[rows.length - 1].length) { rows.push([]); x = 0; }
-        rows[rows.length - 1].push(n);
+        rows[rows.length - 1].push(u);
         x += w;
       });
-      const rowH = (row) => Math.max(...row.map(hOf)) + GAP_Y;
+      const rowH = (row) => Math.max(...row.flat().map(hOf)) + GAP_Y + (row.some((u) => u.length > 1) ? PARALOG_PAD : 0);
       const height = rows.reduce((sum, row) => sum + rowH(row), 0);
       if (along > left && along - left + width > span) {   // 地図の幅を超えるなら折り返す
         along = left;
@@ -1003,13 +1014,17 @@
       }
       let o = out;
       // 行は取った幅の中央に寄せる（枠は中身の大きさまで縮むので、名札が枠より広くても隣にはみ出さないように）
-      const rowW = (row) => row.reduce((sum, n) => sum + wOf(n) + GAP_X, 0);
+      const rowW = (row) => row.reduce((sum, u) => sum + unitW(u), 0);
       rows.forEach((row) => {
         let a = along + (width - rowW(row)) / 2;
-        row.forEach((n) => {
-          const w = wOf(n) + GAP_X;
-          put(n, horizontal ? { x: o + rowH(row) / 2, y: a + w / 2 } : { x: a + w / 2, y: o + rowH(row) / 2 });
-          a += w;
+        row.forEach((u) => {
+          if (u.length > 1) a += PARALOG_PAD / 2;
+          u.forEach((n) => {
+            const w = wOf(n) + GAP_X;
+            put(n, horizontal ? { x: o + rowH(row) / 2, y: a + w / 2 } : { x: a + w / 2, y: o + rowH(row) / 2 });
+            a += w;
+          });
+          if (u.length > 1) a += PARALOG_PAD / 2;
         });
         o += rowH(row);
       });
@@ -1043,7 +1058,7 @@
         const es = n.connectedEdges();
         if (es.length && es.every((e) => e.hasClass("filtered")) && es.some(byKind)) n.addClass("filtered");
       });
-      cy.nodes("[?isComplex]").forEach((c) => c.toggleClass("filtered", c.children().every((m) => m.hasClass("filtered"))));
+      cy.nodes("[?isComplex]").forEach((c) => c.toggleClass("filtered", membersOf(c).every((m) => m.hasClass("filtered"))));
     });
     syncComplexLabels();
     applyConditionFilter();
@@ -1228,7 +1243,7 @@
         n.toggleClass("tips-hidden", !n.hasClass("lod-hidden") && hiddenChild);
       });
       cy.nodes().filter((n) => n.data("isComplex")).forEach((c) => {
-        c.toggleClass("lod-hidden", c.children().every((m) => m.hasClass("lod-hidden")));
+        c.toggleClass("lod-hidden", membersOf(c).every((m) => m.hasClass("lod-hidden")));
       });
     });
     syncComplexLabels();
