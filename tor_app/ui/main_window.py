@@ -32,6 +32,7 @@ class _Done(QObject):
 
 # 「ヘルプ > このアプリについて」: 著作権・ライセンス・保証がないこと・ソースの場所（GPLv3 の第 5 条 d が求める表示）
 SOURCE_URL = "https://github.com/Raico-lab/signal-pathway-viewer"
+MANUAL_URL = SOURCE_URL + "/blob/main/docs/MANUAL.md"   # 画像付きの操作ガイド（docs/MANUAL.md）
 ABOUT_TEXT = (
     "<b>Pathways Viewer for Saccharomyces cerevisiae</b><br>"
     "Copyright (C) 2026 Rai Katsukawa<br><br>"
@@ -59,6 +60,12 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.db_tab, "データベース")
         self.sources_tab = SourcesTab()
         self.tabs.addTab(self.sources_tab, "情報源")
+        # タブの並びの右端: 画像付きの操作ガイド（GitHub の docs/MANUAL.md）を開く
+        manual = QLabel(f"<a href='{MANUAL_URL}'>操作ガイド</a>")
+        manual.setOpenExternalLinks(True)
+        manual.setContentsMargins(0, 0, 10, 0)
+        manual.setToolTip("初めて使う人向けの、画像付きの操作ガイドをブラウザで開きます")
+        self.tabs.setCornerWidget(manual)
         # 画面上部の案内（サーバーに新しいデータがあるときだけ出す）
         self.banner = QFrame()
         self.banner.setStyleSheet("QFrame { background: #fff8e1; border-bottom: 1px solid #ffe082; }")
@@ -103,6 +110,9 @@ class MainWindow(QMainWindow):
         about = QAction("使い方", self)
         about.triggered.connect(lambda: QMessageBox.information(self, "使い方", HELP_TEXT))
         help_menu.addAction(about)
+        guide = QAction("操作ガイド（画像付き）を開く", self)
+        guide.triggered.connect(lambda: QDesktopServices.openUrl(QUrl(MANUAL_URL)))
+        help_menu.addAction(guide)
         info = QAction("データの情報", self)
         info.triggered.connect(self.show_data_info)
         help_menu.addAction(info)
