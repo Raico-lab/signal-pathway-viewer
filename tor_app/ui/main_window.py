@@ -39,7 +39,9 @@ ABOUT_TEXT = (
     "再配布・改変ができます。<b>このプログラムは無保証です。</b>詳しくは同梱の LICENSE をご覧ください。<br><br>"
     f"ソース: <a href='{SOURCE_URL}'>{SOURCE_URL}</a><br>"
     "ほかの部品のライセンス: THIRD_PARTY_NOTICES.md（PyQt6・Qt・Cytoscape.js など）<br>"
-    "データの利用条件: DATA_LICENSES.md（出典ごとの条件に従います。情報源タブに出典を並べています）"
+    "データの利用条件: DATA_LICENSES.md（出典ごとの条件に従います。情報源タブに出典を並べています）<br>"
+    "SGD・Gene Ontology・UniProt・Alliance of Genome Resources・Leutert et al. 2023（Zenodo）のデータは CC BY 4.0、"
+    "BioGRID のデータは MIT、Complex Portal は CC0 で、このアプリのために選択・統合・要約して使っています"
 )
 
 

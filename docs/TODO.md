@@ -11,6 +11,13 @@
   （関係の数・向きは同じで、根拠欄から引用だけが消えた）。下書き（docs/curation/drafts/ の決まりの文書以外）・未確認の回答
   （sample_data/literature/unverified/）・pmc_28839131.txt は Google Drive の TorPathway調査/2026-10-07_引用の退避/ に移した
 - 2026-10-07: ソースを GPLv3 で公開する準備（LICENSE・ほかの部品のライセンス・データの利用条件・アプリのライセンス表示）
+- 2026-10-07: ソースを公開した（Raico-lab/signal-pathway-viewer、履歴は 1 つにまとめた。元の履歴は手元の private-history）。古い Actions の
+  実行記録 11 件を消した。データの利用条件を出典の公式の記載で確かめて DATA_LICENSES.md に書いた（再配布を禁じるものはなし）。
+  Qt の LGPL-3.0・BioGRID の MIT の全文を licenses/ に置いて同梱、CITATION.cff、情報源タブにサイトごとのライセンス
+  - [ ] GitHub のサポートに、置き換える前の古いコミットの削除を依頼する（番号の一覧は Google Drive の TorPathway調査/2026-10-07_GitHubサポート依頼/。本人が出す）
+  - [ ] YEASTRACT+ に再配布の了承を問い合わせる
+  - [ ] Leutert 2023 の要約値を Supplementary Tables（出版社の権利）でなく Zenodo（doi:10.5281/zenodo.10016524、CC BY 4.0）のファイルから作る（tools/build_expression.py）
+  - [ ] YGOB は明示の許諾がない。必要なら ygob@ucd.ie に確認
 - [ ] **ブラウザ版を研究室に公開する**（2026-10-05）: サーバー代のかからない GitHub Pages で、インストールなしで使える版。
   デスクトップ版のコードをブラウザの中の Python（Pyodide）で動かし、Qt の部品は `webapp/shim/PyQt6/` が HTML で作る。
   上部のタブに「デスクトップアプリ」（Windows 版・Mac 版のダウンロードと開き方）を足した。作り方・公開の仕方は README の「ブラウザ版」

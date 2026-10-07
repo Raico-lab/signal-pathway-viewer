@@ -145,9 +145,11 @@ class SourcesTab(QWidget):
 
         def site_cells(s: dict) -> str:
             host = re.sub(r"^https?://(www\.)?|/$", "", s["url"])
+            # データの利用条件（data/sources.json の license。詳しくは DATA_LICENSES.md）
+            lic = f"<br><span style='color:#555;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
             return (f"<td><a href='{s['url']}' style='color:#000;text-decoration:none;"
                     f"font-weight:bold;font-size:12px'>{html.escape(s['name'])}</a><br>"
-                    f"<span style='color:#000;font-size:10px'>{html.escape(host)}</span></td>"
+                    f"<span style='color:#000;font-size:10px'>{html.escape(host)}</span>{lic}</td>"
                     f"<td align='right' valign='middle'>{site_count(s)}</td><td width='24'></td>")
 
         # 横に SITE_COLUMNS 個ずつ並べる（上の枠に収まるように）

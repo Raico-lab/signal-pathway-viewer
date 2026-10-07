@@ -77,6 +77,7 @@ def build(out: Path = OUT) -> dict:
     # GPLv3 の本文・ほかの部品とデータの利用条件も置く（公開先の一番上。ソースの場所は「このアプリについて」で案内する）
     for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "DATA_LICENSES.md"):
         shutil.copy2(ROOT / name, out / name)
+    shutil.copytree(ROOT / "licenses", out / "licenses")   # 同梱するデータ・部品のライセンスの全文（BioGRID の MIT など）
     build_app_zip(out / "app.zip")
     (out / "data").mkdir()
     sizes = {}

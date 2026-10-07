@@ -5,66 +5,76 @@
    "url": "https://www.yeastgenome.org/",
    "match": [
     "SGD GO 注釈"
-   ]
+   ],
+   "license": "CC BY 4.0"
   },
   {
    "name": "BioGRID",
    "url": "https://thebiogrid.org/",
    "match": [
     "BioGRID"
-   ]
+   ],
+   "license": "MIT"
   },
   {
    "name": "PhosphoGRID",
    "url": "https://phosphogrid.org/",
    "match": [
     "PhosphoGRID"
-   ]
+   ],
+   "license": "MIT（BioGRID）"
   },
   {
    "name": "YEASTRACT+",
    "url": "https://yeastract-plus.org/",
    "match": [
     "YEASTRACT"
-   ]
+   ],
+   "license": "利用条件あり"
   },
   {
    "name": "GO-CAM",
    "url": "https://geneontology.org/",
    "match": [
     "GO-CAM"
-   ]
+   ],
+   "license": "CC BY 4.0（GO）"
   },
   {
    "name": "UniProt",
    "url": "https://www.uniprot.org/",
    "match": [
     "UniProt"
-   ]
+   ],
+   "license": "CC BY 4.0"
   },
   {
    "name": "Complex Portal",
    "url": "https://www.ebi.ac.uk/complexportal/",
    "match": [],
-   "note": "複合体 633 件"
+   "note": "複合体 633 件",
+   "license": "CC0"
   },
   {
    "name": "YGOB",
    "url": "http://ygob.ucd.ie/",
    "match": [],
-   "note": "パラログ 545 組"
+   "note": "パラログ 545 組",
+   "license": "明示なし・引用を依頼"
   },
   {
    "name": "Alliance",
    "url": "https://www.alliancegenome.org/",
    "match": [],
-   "note": "パラログ 569 組"
+   "note": "パラログ 569 組",
+   "license": "CC BY 4.0"
   },
   {
    "name": "SGD SPELL",
    "url": "https://spell.yeastgenome.org/",
    "match": [],
-   "note": "発現の測定 93 件"
+   "note": "発現の測定 93 件",
+   "license": "CC BY 4.0（元データは GEO）"
   }
  ],
  "papers": [
