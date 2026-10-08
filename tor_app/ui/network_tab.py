@@ -138,11 +138,7 @@ class NetworkTab(QWidget):
         self.layout_combo.setCurrentIndex(max(0, self.layout_combo.findData(layout_name)))
         self.layout_combo.blockSignals(False)
         self.color_combo.blockSignals(True)
-        if color_mode in expression.DELETION_KINDS and expression.has_deletions():
-            self.del_color = color_mode   # 前回は破壊株で色分けしていた
-            self.color_combo.setCurrentIndex(-1)
-        else:
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
+        self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
         self.color_combo.blockSignals(False)
         self.edge_color_combo.blockSignals(True)
         self.edge_color_combo.setCurrentIndex(max(0, self.edge_color_combo.findData(edge_color)))
@@ -176,11 +172,13 @@ class NetworkTab(QWidget):
                 self.color_combo.addItem(label, key)
             tip += ("\n発現・リン酸化・タンパク質量: 右の「条件」で選んだ条件での、対照との log2 比。"
                     "赤＝増える、青＝減る、灰＝データなし")
+        if expression.has_deletions():
+            for key, label in expression.DELETION_KINDS.items():
+                self.color_combo.addItem(label, key)
+            tip += ("\n破壊株の mRNA・リン酸化: 左の「破壊株」タブで選んだ株での、野生型との log2 比（実測）。"
+                    "壊した遺伝子は黒。タブで株の選択が外れると、前の色に戻ります")
         self.color_combo.setToolTip(tip)
-        # 破壊株での色分け（del_mrna / del_phospho）は選択肢に出さず、左の「破壊株」タブで株を押したときだけにする。
-        # その間は選択肢を空にし、選択肢からどれかを選ぶと破壊株の色分けをやめる
-        self.del_color: str | None = None
-        self.color_combo.currentIndexChanged.connect(self._on_color_choice)   # ほかの受け口より先に
+        self._color_before_del = "role"   # 破壊株で色分けする前の色（株の選択が外れたら戻す）
         self.color_combo.currentIndexChanged.connect(lambda: self._save_view())
         self.color_combo.currentIndexChanged.connect(
             lambda: self._all_js(f"app.setColorMode({json.dumps(self.color_mode())})"))
@@ -538,6 +536,8 @@ class NetworkTab(QWidget):
         self.del_list.setMinimumHeight(120)
         self.del_list.setMaximumHeight(200)
         self.del_list.itemClicked.connect(self._on_deletion_strain_clicked)
+        # 選択が外れたら色を戻す（一覧を作り直す途中で一度空になるので、作り終えてから見る）
+        self.del_list.itemSelectionChanged.connect(lambda: QTimer.singleShot(0, self._check_deletion_selection))
         outer.addWidget(self.del_list)
         # 選択肢の中身を作ってからつなぐ（作る途中の切り替えで一覧を作り直さない）
         self.del_search_mode.currentIndexChanged.connect(lambda _i: self._on_deletion_search_mode())
@@ -566,6 +566,7 @@ class NetworkTab(QWidget):
         self.del_changes.setMinimumHeight(160)
         self.del_changes.setToolTip("選んだ破壊株で変わった、今の地図の遺伝子（名前の順）。押すと右側に説明を出します")
         self.del_changes.itemClicked.connect(self._on_deletion_change_clicked)
+        self.del_changes.itemSelectionChanged.connect(lambda: QTimer.singleShot(0, self._check_deletion_selection))
         outer.addWidget(self.del_changes, 1)
         outer.addWidget(self.help_button("deletion"))
         self._refill_deletion_list()
@@ -643,6 +644,8 @@ class NetworkTab(QWidget):
             pid = self._orf_pid(orf)
             if pid is not None:
                 self.show_node(pid, self.active_pane)   # 選んだ遺伝子の説明も出す
+        elif self.deletion_kind() and orf == self.deletion_strain():
+            self.del_list.clearSelection()   # 色分けしている株をもう一度押した: 選択を外し、色を戻す
         else:
             self._choose_strain(orf)
 
@@ -788,6 +791,9 @@ class NetworkTab(QWidget):
             return
         kind, orf = data
         if kind == "strain":
+            if self.deletion_kind() and orf == self.deletion_strain():
+                self.del_changes.clearSelection()   # 色分けしている株をもう一度押した: 選択を外し、色を戻す
+                return
             self._choose_strain(orf)
         pid = self._orf_pid(orf)
         if pid is not None:
@@ -1472,25 +1478,35 @@ class NetworkTab(QWidget):
         return False
 
     def color_mode(self) -> str:
-        return self.del_color or self.color_combo.currentData() or "role"
-
-    def _on_color_choice(self, index: int) -> None:
-        """色の選択肢からどれかを選んだ: 破壊株での色分けをやめる。"""
-        if index >= 0:
-            self.del_color = None
+        return self.color_combo.currentData()
 
     def _color_by_deletion(self, kind: str) -> None:
-        """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。色の選択肢は空にする。"""
-        if self.del_color == kind:
-            self._push_data_values()
+        """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。その前の色を覚えておく。"""
+        if self.deletion_kind() is None:
+            self._color_before_del = self.color_mode()
+        if self.color_mode() == kind:
+            self._push_data_values()   # 株だけが変わった
+        else:
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+
+    def _end_deletion_color(self) -> None:
+        """破壊株での色分けをやめ、その前の色に戻す。"""
+        if self.deletion_kind() is not None:
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(self._color_before_del or "role")))
+
+    def _check_deletion_selection(self) -> None:
+        """破壊株タブで株の選択が外れたら（上の一覧・「変化した遺伝子」の下の欄のどちらにも、色分けしている株が
+        選ばれていない）、色を破壊株で色分けする前に戻す。"""
+        if getattr(self, "del_list", None) is None or self.deletion_kind() is None:
             return
-        self.del_color = kind
-        self.color_combo.blockSignals(True)
-        self.color_combo.setCurrentIndex(-1)
-        self.color_combo.blockSignals(False)
-        self._save_view()
-        self._all_js(f"app.setColorMode({json.dumps(kind)})")
-        self._push_data_values()
+        strain = self.deletion_strain()
+        if self.del_search_mode.currentData() == "changed":
+            chosen = {it.data(Qt.ItemDataRole.UserRole) for it in self.del_changes.selectedItems()}
+            if ("strain", strain) in chosen:
+                return
+        elif strain in {it.data(Qt.ItemDataRole.UserRole) for it in self.del_list.selectedItems()}:
+            return
+        self._end_deletion_color()
 
     def edge_color_mode(self) -> str:
         return self.edge_color_combo.currentData()
