@@ -13,7 +13,7 @@
     "SGD GO 注釈"
    ],
    "note": "発現の測定 93 件",
-   "license": "CC BY 4.0（発現は GEO）",
+   "license": "CC BY 4.0",
    "cite": [
     "39530598",
     "17724061"
@@ -56,7 +56,7 @@
    "match": [
     "GO-CAM"
    ],
-   "license": "CC BY 4.0（GO）",
+   "license": "CC BY 4.0",
    "cite": [
     "36866529",
     "10802651"
