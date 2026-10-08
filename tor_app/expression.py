@@ -119,14 +119,6 @@ def gene_summary(orf: str) -> dict[str, dict[str, tuple[float, str]]]:
     return out
 
 
-def measure_counts() -> dict[str, int]:
-    """論文（PMID）→ その論文から取った測定の数（情報源タブの根拠の数に足す）。"""
-    con = _db()
-    if con is None:
-        return {}
-    return {p: n for p, n in con.execute("SELECT pmid, COUNT(*) FROM measures WHERE pmid != '' GROUP BY pmid")}
-
-
 # ---- 破壊株での実測（tools/build_deletions.py。表 strains・deletion・deletion_measured） ----
 DELETION_KINDS = {"del_mrna": "破壊株の mRNA", "del_phospho": "破壊株のリン酸化"}
 _DEL_BASE = {"del_mrna": "mrna", "del_phospho": "phospho"}
@@ -215,13 +207,6 @@ def strain_info(orf: str) -> list[dict]:
     return [dict(kind=k, label=l, source=s, pmid=p, detail=d) for k, l, s, p, d in _db().execute(
         "SELECT s.kind, s.label, s.source, s.pmid, s.detail FROM strains s JOIN genes k ON k.id = s.gene_id "
         "WHERE k.orf = ?", (orf.upper(),))]
-
-
-def deletion_counts() -> dict[str, int]:
-    """論文（PMID）→ 破壊株の数（情報源タブの根拠の数に足す）。"""
-    if not has_deletions():
-        return {}
-    return {p: n for p, n in _db().execute("SELECT pmid, COUNT(*) FROM strains GROUP BY pmid")}
 
 
 _targets_cache: dict[str, dict[str, dict[str, float]]] = {}

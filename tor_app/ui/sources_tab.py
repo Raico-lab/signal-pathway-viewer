@@ -2,9 +2,8 @@
 
 サイト: data/sources.json の sites（名前・URL・根拠欄で見分ける語）と、それが根拠になっている関係の本数。
 同じところが出すもの（SGD と SGD SPELL、BioGRID と PhosphoGRID）は includes で 1 つにまとめ、cite にサイトが引用を求める論文を並べる。
-論文: data/papers.json（tools/fetch_paper_list.py が作る。1 本ずつ書誌と URL）と、その論文が根拠欄に出てくる関係の本数。
-10 本ずつのページに分け（スクロールなし）、題名で絞り込める。
-公開データとして使った論文（sources.json の papers）は、根拠欄で見分ける語で数える。本数は DB を開いたときに数える。
+論文: data/papers.json（tools/fetch_paper_list.py が作る。1 本ずつ書誌と URL）。
+10 本ずつのページに分け（スクロールなし）、題名で絞り込める。サイトの本数は DB を開いたときに数える。
 サーバーがあれば、論文・サイトの情報はサーバーのものを使う（tor_app/server.py。取れるまでは手元の写しか同梱のもの）。
 """
 import html
@@ -16,7 +15,7 @@ from PyQt6.QtCore import QObject, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextBrowser, QVBoxLayout, QWidget
 
-from .. import expression, server
+from .. import server
 
 _loaded: dict[str, dict] = {}   # サーバーから新しく取ったもの（取れるまでは手元の版を使う）
 
@@ -80,10 +79,9 @@ class SourcesTab(QWidget):
         layout.addLayout(bar)
         layout.addWidget(self.papers_view, 2)
         self.papers = self._indexed(_load("papers.json").get("papers", []))
-        self.paper_counts: dict[str, int] = {}
         self.page = 0
         self.db = None
-        self.show_counts({}, {})
+        self.show_counts({})
         if server.enabled():   # 裏でサーバーの情報源の情報を取り、取れたら出し直す
             self._fetched = _Fetched()
             self._fetched.done.connect(self._on_fetched)
@@ -111,29 +109,16 @@ class SourcesTab(QWidget):
             return
         self._stale = False
         sources = _load("sources.json")
-        sites, data_papers = sources.get("sites", []), {p["pmid"]: p for p in sources.get("papers", [])}
+        sites = sources.get("sites", [])
         site_counts = {s["name"]: 0 for s in sites}
-        paper_counts: dict[str, int] = {}
         for it in db.interactions():
             ev = it.evidence or ""
             for s in sites:
                 if any(m in ev for m in s["match"]):
                     site_counts[s["name"]] += 1
-            pmids = set(re.findall(r"\d{6,9}", ev))
-            for pmid, p in data_papers.items():
-                if any(m in ev for m in p["match"]):
-                    pmids.add(pmid)
-            for pmid in pmids:
-                paper_counts[pmid] = paper_counts.get(pmid, 0) + 1
-        # 条件ごとの発現・リン酸化の測定も、その論文の根拠として数える
-        for pmid, n in expression.measure_counts().items():
-            paper_counts[pmid] = paper_counts.get(pmid, 0) + n
-        # 破壊株での実測（Deleteome・Bodenmiller）も、株の数を根拠として数える
-        for pmid, n in expression.deletion_counts().items():
-            paper_counts[pmid] = paper_counts.get(pmid, 0) + n
-        self.show_counts(site_counts, paper_counts)
+        self.show_counts(site_counts)
 
-    def show_counts(self, site_counts: dict, paper_counts: dict) -> None:
+    def show_counts(self, site_counts: dict) -> None:
         sites = _load("sources.json").get("sites", [])
 
         papers = {p["pmid"]: p for p in self.papers}
@@ -173,7 +158,6 @@ class SourcesTab(QWidget):
                        for r, row in enumerate(rows))
         self.sites_view.setHtml(f"<table width='100%' cellspacing='0' cellpadding='6'><tr>{head}</tr>{body}</table>")
         self._fit_sites()
-        self.paper_counts = paper_counts
         self._show_page(self.page)
 
     def _fit_sites(self) -> None:
@@ -224,20 +208,12 @@ class SourcesTab(QWidget):
         self.prev_button.setEnabled(self.page > 0)
         self.next_button.setEnabled(self.page < pages - 1)
 
-        def paper_count(p: dict) -> str:
-            n = self.paper_counts.get(p["pmid"])
-            if n:
-                return _number(f"{n:,}")
-            return ""
-
         rows = "".join(
             f"<tr bgcolor='{ROW_BG[i % 2]}'><td>"
             f"<span style='font-size:13px;color:#000'>{html.escape(p['title'])}</span><br>"
             f"<span style='color:#000;font-size:11px'>{html.escape(p['cite'])}</span>　"
             f"<a href='{html.escape(p['url'])}' style='color:#000;text-decoration:none;font-size:11px'>"
-            f"{html.escape(p['url'])}</a></td>"
-            f"<td width='110' align='right' valign='middle'>{paper_count(p)}</td></tr>" for i, p in enumerate(shown))
+            f"{html.escape(p['url'])}</a></td></tr>" for i, p in enumerate(shown))
         self.papers_view.setHtml(
-            "<table width='100%' cellspacing='0' cellpadding='8'>"
-            f"<tr><td style='{HEAD}'>論文</td><td align='right' style='{HEAD}'>根拠の数</td></tr>" + rows + "</table>"
+            "<table width='100%' cellspacing='0' cellpadding='8'>" + rows + "</table>"
             if shown else "<span style='color:#999'>該当する論文はありません</span>")
