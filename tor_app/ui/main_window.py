@@ -32,10 +32,12 @@ class _Done(QObject):
 
 # 「ヘルプ > このアプリについて」: 著作権・ライセンス・保証がないこと・ソースの場所（GPLv3 の第 5 条 d が求める表示）
 SOURCE_URL = "https://github.com/Raico-lab/signal-pathway-viewer"
+CONTACT = "25wm2519@student.gs.chiba-u.jp"   # 連絡先（作者）
 MANUAL_URL = SOURCE_URL + "/blob/main/docs/MANUAL.md"   # 画像付きの操作ガイド（docs/MANUAL.md）
 ABOUT_TEXT = (
     "<b>Pathways Viewer for Saccharomyces cerevisiae</b><br>"
-    "Copyright (C) 2026 Rai Katsukawa<br><br>"
+    "Copyright (C) 2026 Rai Katsukawa<br>"
+    f"連絡先: <a href='mailto:{CONTACT}'>{CONTACT}</a><br><br>"
     "このプログラムはフリーソフトウェアです。GNU General Public License version 3（GPLv3）の条件のもとで、"
     "再配布・改変ができます。<b>このプログラムは無保証です。</b>詳しくは同梱の LICENSE をご覧ください。<br><br>"
     f"ソース: <a href='{SOURCE_URL}'>{SOURCE_URL}</a><br>"
