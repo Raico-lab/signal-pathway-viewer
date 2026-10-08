@@ -140,8 +140,10 @@ class NetworkTab(QWidget):
         self.color_combo.blockSignals(True)
         self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
         self.color_combo.blockSignals(False)
-        if self.data_kind() is not None:   # 前回は条件の測定で色分けしていた: 条件タブの遺伝子の側を開いておく
-            self.cond_mode.setCurrentIndex(max(0, self.cond_mode.findData("genes")))
+        if self.data_kind() is not None:   # 以前の版で条件の測定で色分けしていた（今は選べない）: 役割に戻す
+            self.color_combo.blockSignals(True)
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData("role")))
+            self.color_combo.blockSignals(False)
         self.edge_color_combo.blockSignals(True)
         self.edge_color_combo.setCurrentIndex(max(0, self.edge_color_combo.findData(edge_color)))
         self.edge_color_combo.blockSignals(False)
@@ -813,10 +815,12 @@ class NetworkTab(QWidget):
             view = json.loads(VIEW_FILE.read_text(encoding="utf-8"))
             saved, top = view.get("conditions_off", []), bool(view.get("conditions_top", False))
         except (OSError, ValueError, AttributeError):
-            saved, top = [], False
+            view, saved, top = {}, [], False
         self.conditions_off: set[str] = {k for k in saved if k in self._all_condition_keys()}
+        # 「遺伝子」で外した条件（測定のある条件のキー）
+        self.gene_conditions_off: set[str] = set(view.get("gene_conditions_off", [])) if isinstance(view, dict) else set()
         self._cond_items: dict[str, QTreeWidgetItem] = {}   # 経路の条件 → 一覧の項目
-        self._cond_open: set[str] = set()                   # 開いている群（経路・遺伝子で共通）
+        self._cond_applying = False   # 絞り込みで群を開閉している間（開いた群として覚えない）
         self._cond_syncing = False
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -839,7 +843,7 @@ class NetworkTab(QWidget):
         self.cond_edges_part = QWidget()
         edges = QVBoxLayout(self.cond_edges_part)
         edges.setContentsMargins(0, 0, 0, 0)
-        self.cond_tree = self._condition_tree()
+        self.cond_tree = self._condition_tree(start_open=False)
         self.cond_tree.itemChanged.connect(self._on_condition_item_changed)
         edges.addWidget(self.cond_tree)
         buttons = QHBoxLayout()
@@ -867,12 +871,20 @@ class NetworkTab(QWidget):
         layout.addWidget(self.cond_edges_part, 1)
 
         # ---- 遺伝子 ----
+        # 経路と同じ形: 条件にチェック（群のチェックでまとめて）。チェックした条件で大きく変化した遺伝子を目立たせる
         self.cond_genes_part = QWidget()
         genes = QVBoxLayout(self.cond_genes_part)
         genes.setContentsMargins(0, 0, 0, 0)
-        self.cond_gene_tree = self._condition_tree()
+        self.cond_gene_tree = self._condition_tree(start_open=False)
         self.cond_gene_tree.itemChanged.connect(self._on_condition_gene_checked)
         genes.addWidget(self.cond_gene_tree)
+        buttons = QHBoxLayout()
+        for text, on in (("すべて選択", True), ("すべて解除", False)):
+            b = QPushButton(text)
+            b.clicked.connect(lambda _=False, on=on: self.set_gene_conditions_off(
+                set() if on else set(expression.condition_keys())))
+            buttons.addWidget(b)
+        genes.addLayout(buttons)
         kinds = QHBoxLayout()
         kinds.addWidget(QLabel("データ"))
         self.cond_kind_group = QButtonGroup(self)
@@ -884,9 +896,11 @@ class NetworkTab(QWidget):
             kinds.addWidget(b)
             b.toggled.connect(lambda on, k=key: on and self._on_condition_kind(k))
         kinds.addStretch(1)
-        self.cond_kind_buttons["mrna"].blockSignals(True)
-        self.cond_kind_buttons["mrna"].setChecked(True)
-        self.cond_kind_buttons["mrna"].blockSignals(False)
+        start = view.get("gene_condition_kind") if isinstance(view, dict) else None
+        start = start if start in self.cond_kind_buttons else "mrna"
+        self.cond_kind_buttons[start].blockSignals(True)
+        self.cond_kind_buttons[start].setChecked(True)
+        self.cond_kind_buttons[start].blockSignals(False)
         genes.addLayout(kinds)
         self.cond_summary = QLabel()
         self.cond_summary.setWordWrap(True)
@@ -894,7 +908,8 @@ class NetworkTab(QWidget):
         genes.addWidget(self.cond_summary)
         self.cond_values = QListWidget()
         self.cond_values.setMinimumHeight(160)
-        self.cond_values.setToolTip("選んだ条件での、今の地図の遺伝子の値（名前の順）。押すと右側に説明を出します")
+        self.cond_values.setToolTip("チェックした条件で大きく変化した、今の地図の遺伝子（名前の順）。値は変化の最も大きい条件のもの。"
+                                    "押すと右側に説明を出します")
         self.cond_values.itemClicked.connect(self._on_condition_value_clicked)
         genes.addWidget(self.cond_values, 1)
         genes.addWidget(self.help_button("conditions"))
@@ -912,15 +927,26 @@ class NetworkTab(QWidget):
             if fg is not None and fg.color().name().lower() == "#9e9e9e":
                 option.state &= ~QStyle.StateFlag.State_Enabled
 
-    def _condition_tree(self) -> QTreeWidget:
-        """条件の一覧（群で開閉。経路・遺伝子で同じ形）。開いた群を覚える。"""
+    def _condition_tree(self, start_open: bool) -> QTreeWidget:
+        """条件の一覧（群で開閉。経路・遺伝子で同じ形）。start_open なら群は最初から開いておく。開閉した群を覚える
+        （tree.toggled: start_open なら閉じた群、そうでなければ開いた群）。"""
         tree = QTreeWidget()
         tree.setHeaderHidden(True)
         tree.setItemDelegate(self._DimGrayDelegate(tree))
         tree.setMinimumHeight(160)
         tree.setMaximumHeight(260)
-        tree.itemExpanded.connect(lambda it: self._cond_open.add(it.text(0).split("（")[0]))
-        tree.itemCollapsed.connect(lambda it: self._cond_open.discard(it.text(0).split("（")[0]))
+        tree.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)   # 選ぶのはチェックだけ（押しても青くしない）
+        tree.start_open = start_open
+        tree.toggled = set()
+
+        def remember(item, opened: bool, tree=tree) -> None:
+            if self._cond_applying or not item.childCount():
+                return
+            name = item.text(0).split("（")[0]
+            (tree.toggled.add if opened != tree.start_open else tree.toggled.discard)(name)
+
+        tree.itemExpanded.connect(lambda it: remember(it, True))
+        tree.itemCollapsed.connect(lambda it: remember(it, False))
         return tree
 
     @staticmethod
@@ -950,18 +976,22 @@ class NetworkTab(QWidget):
                     child.setHidden(not shown)
                     any_shown |= shown
                 group.setHidden(not any_shown)
-                group.setExpanded(bool(words and any_shown) or name in self._cond_open)
+                opened = (name not in tree.toggled) if tree.start_open else (name in tree.toggled)
+                self._cond_applying = True
+                group.setExpanded(bool(words and any_shown) or opened)
+                self._cond_applying = False
 
     def _on_condition_mode(self) -> None:
         genes = self.cond_mode.currentData() == "genes"
         self.cond_edges_part.setVisible(not genes)
         self.cond_genes_part.setVisible(genes)
-        if not genes and self.data_kind() is not None:
-            self._end_tab_color()   # 遺伝子の条件の選択をやめた: 役割の色に戻す
-        self._sync_condition_genes()
+        self._all_js(self.condition_js())   # 地図の目立たせ方も切り替える
+        self._update_condition_genes()
         self._update_condition_edges()
 
     # ---- 条件タブの「遺伝子」 ----
+    GENE_CHANGE_LOG2 = 1.0   # 「大きく変化した」の目安: 2 倍以上（|log2 比| ≥ 1）
+
     def _cond_gene_items(self) -> list[QTreeWidgetItem]:
         """「遺伝子」の一覧の条件の項目（群の中の項目）。"""
         out = []
@@ -988,13 +1018,13 @@ class NetworkTab(QWidget):
         self._cond_syncing = True
         self.cond_gene_tree.clear()
         for group, items in groups.items():
-            head = self._group_item(self.cond_gene_tree, group, len(items), checkable=False)
+            head = self._group_item(self.cond_gene_tree, group, len(items), checkable=True)
             ok_any = False
             for c in items:
                 item = QTreeWidgetItem([c.label])
                 item.setData(0, Qt.ItemDataRole.UserRole, c.key)
                 item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-                item.setCheckState(0, Qt.CheckState.Unchecked)
+                item.setCheckState(0, Qt.CheckState.Unchecked if c.key in self.gene_conditions_off else Qt.CheckState.Checked)
                 ok = kind in have.get(c.key, set())
                 ok_any |= ok
                 item.setForeground(0, QColor("#212121" if ok else "#9e9e9e"))
@@ -1004,76 +1034,98 @@ class NetworkTab(QWidget):
             head.setForeground(0, QColor("#212121" if ok_any else "#9e9e9e"))
         self._cond_syncing = False
         self._apply_condition_search()
-        self._sync_condition_genes()
+        self._update_condition_genes()
 
     def _on_condition_gene_checked(self, item, _column: int = 0) -> None:
-        """「遺伝子」の条件のチェックを切り替えた。地図の色は 1 つの条件でしか塗れないので、チェックした条件の測定で色分けし、
-        ほかのチェックは外す（選んでいる種類の測定がなければ、ある種類に切り替える）。チェックをすべて外すと役割の色に戻す。"""
-        if self._cond_syncing:
+        """「遺伝子」のチェックを切り替えた（群のチェックは中の条件をまとめて切り替える。知らせはまとめて 1 回だけ扱う）。"""
+        if self._cond_syncing or getattr(self, "_gene_cond_pending", False):
             return
-        key = item.data(0, Qt.ItemDataRole.UserRole)
-        if not key:
-            return
-        if item.checkState(0) != Qt.CheckState.Checked:
-            if self.data_kind() is not None and key == self.data_condition():
-                self._end_tab_color()
-            return
-        have = expression.condition_kinds().get(key, set())
-        kind = self._cond_kind()
-        if kind not in have and have:
-            kind = next(k for k in expression.SHORT if k in have)
-            for k, b in self.cond_kind_buttons.items():
-                b.blockSignals(True)
-                b.setChecked(k == kind)
-                b.blockSignals(False)
-        self.data_cond_combo.blockSignals(True)
-        self.data_cond_combo.setCurrentIndex(max(0, self.data_cond_combo.findData(key)))
-        self.data_cond_combo.blockSignals(False)
+        self._gene_cond_pending = True
+        QTimer.singleShot(0, self._apply_gene_condition_checks)
+
+    def _apply_gene_condition_checks(self) -> None:
+        self._gene_cond_pending = False
+        off = {it.data(0, Qt.ItemDataRole.UserRole) for it in self._cond_gene_items()
+               if it.checkState(0) != Qt.CheckState.Checked}
+        if off != self.gene_conditions_off:
+            self.gene_conditions_off = off
+            self._save_view()
+            self._update_condition_genes()
+
+    def set_gene_conditions_off(self, off: set[str]) -> None:
+        """「遺伝子」で外す条件をまとめて決める（「すべて選択」「すべて解除」）。"""
+        self.gene_conditions_off = set(off)
+        self._cond_syncing = True
+        for it in self._cond_gene_items():
+            key = it.data(0, Qt.ItemDataRole.UserRole)
+            it.setCheckState(0, Qt.CheckState.Unchecked if key in self.gene_conditions_off else Qt.CheckState.Checked)
+        self._cond_syncing = False
         self._save_view()
-        QTimer.singleShot(0, lambda: self._set_color(kind))   # チェックの知らせの中では一覧を作り直さない
+        self._update_condition_genes()
 
     def _on_condition_kind(self, kind: str) -> None:
+        self._save_view()
         self._refill_condition_list()
-        if self.data_kind() is not None and kind != self.data_kind():
-            self._set_color(kind)   # 色分け中なら地図も変える
 
-    def _sync_condition_genes(self) -> None:
-        """「遺伝子」の表示を、今の色分けにそろえる（色分けしている条件を選び、下の欄に今の地図の遺伝子と値）。"""
-        if getattr(self, "cond_gene_tree", None) is None:
+    def _changed_genes(self) -> dict[str, tuple[float, str, str]] | None:
+        """「遺伝子」でチェックした条件のどれかで大きく変化した（2 倍以上）、今の地図の遺伝子:
+        ORF → (変化の最も大きい値, 補足（リン酸化の部位）, その条件)。すべての条件にチェックしていれば None（絞り込まない）。"""
+        kind = self._cond_kind()
+        keys = [k for k in expression.condition_keys() if k not in self.gene_conditions_off]
+        if not self.gene_conditions_off:
+            return None
+        cache = getattr(self, "_gene_values_cache", None)
+        if cache is None:
+            cache = self._gene_values_cache = {}
+        shown = self._map_orfs()
+        out: dict[str, tuple[float, str, str]] = {}
+        for cond in keys:
+            if (kind, cond) not in cache:
+                cache[(kind, cond)] = expression.values(kind, cond)
+            for orf, (v, d) in cache[(kind, cond)].items():
+                if orf in shown and abs(v) >= self.GENE_CHANGE_LOG2 and (orf not in out or abs(v) > abs(out[orf][0])):
+                    out[orf] = (v, d, cond)
+        return out
+
+    def _all_changed_genes(self) -> dict[str, tuple[float, str, str]]:
+        """すべての条件のどれかで大きく変化した、今の地図の遺伝子（下の欄に出す。すべてにチェックしているとき）。"""
+        saved = self.gene_conditions_off
+        self.gene_conditions_off = {"_"}   # 絞り込む扱いにして数える（条件のキーに "_" はない）
+        try:
+            return self._changed_genes() or {}
+        finally:
+            self.gene_conditions_off = saved
+
+    def _update_condition_genes(self) -> None:
+        """「遺伝子」の地図と下の欄を今のチェックにそろえる。地図は、チェックした条件で大きく変化した遺伝子を目立たせ、
+        ほかを薄くする（すべてにチェックしていれば普段の地図。「遺伝子」を開いている間だけ）。"""
+        if getattr(self, "cond_values", None) is None:
             return
-        kind, cond = self.data_kind(), self.data_condition()
-        self._cond_syncing = True
-        for item in self._cond_gene_items():
-            on = kind is not None and item.data(0, Qt.ItemDataRole.UserRole) == cond
-            item.setCheckState(0, Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
-            if on:
-                item.parent().setExpanded(True)
-        self._cond_syncing = False
-        if kind is not None:
-            for k, b in self.cond_kind_buttons.items():
-                b.blockSignals(True)
-                b.setChecked(k == kind)
-                b.blockSignals(False)
-        have = expression.condition_kinds().get(cond, set()) if kind is not None else set(expression.SHORT)
+        self._all_js(self.condition_js())
+        have = expression.condition_kinds()
         for k, b in self.cond_kind_buttons.items():
-            b.setEnabled(k in have)
+            b.setEnabled(any(k in have.get(c, set()) for c in expression.condition_keys()))
         self.cond_values.clear()
-        if kind is None or not cond or self.model is None:
+        if self.model is None or self.cond_mode.currentData() != "genes":
             self.cond_summary.setText("")
             return
-        vals = expression.values(kind, cond)
+        changed = self._changed_genes()
+        everything = changed is None
+        if everything:
+            changed = self._all_changed_genes()
         names = expression.gene_names()
-        rows = sorted(((names.get(orf, orf), orf, v, d) for orf, (v, d) in vals.items() if orf in self._map_orfs()),
-                      key=lambda r: r[0].upper())
-        up = sum(1 for r in rows if r[2] > 0)
-        label = conditions.labels().get(cond, cond)
-        self.cond_summary.setText(f"<b>{html.escape(label)} の{expression.KINDS[kind]}</b><br>"
-                                  f"今の地図 {len(rows)}（上がった {up}・下がった {len(rows) - up}）")
-        for name, orf, v, d in rows:
-            item = QListWidgetItem(f"{name}{(' ' + d) if d else ''}   {v:+.2f}")
+        labels = conditions.labels()
+        rows = sorted(((names.get(orf, orf), orf, v, d, c) for orf, (v, d, c) in changed.items()), key=lambda r: r[0].upper())
+        self.cond_summary.setText(f"2 倍以上変化した遺伝子 {len(rows)} 個" + ("（すべての条件）" if everything else ""))
+        for name, orf, v, d, cond in rows:
+            item = QListWidgetItem(f"{name}{(' ' + d) if d else ''}   {v:+.2f}（{labels.get(cond, cond)}）")
             item.setData(Qt.ItemDataRole.UserRole, orf)
-            item.setForeground(QColor("#c62828" if v > 0 else "#1565c0" if v < 0 else "#555"))
+            item.setForeground(QColor("#c62828" if v > 0 else "#1565c0"))
             self.cond_values.addItem(item)
+
+    def _sync_condition_genes(self) -> None:
+        """地図が変わった・DB を読み直したとき: 「遺伝子」の地図と下の欄を作り直す。"""
+        self._update_condition_genes()
 
     def _on_condition_value_clicked(self, item) -> None:
         pid = self._orf_pid(item.data(Qt.ItemDataRole.UserRole) or "")
@@ -1178,8 +1230,13 @@ class NetworkTab(QWidget):
             self.show_edge(iid, self.active_pane)
 
     def condition_js(self) -> str:
-        """地図に条件タブの状態を渡す JavaScript（外した条件と、「最も上流の経路を表示」）。"""
-        return f"app.setConditionFilter({json.dumps(sorted(self.conditions_off))}, {json.dumps(self.cond_top.isChecked())})"
+        """地図に条件タブの状態を渡す JavaScript。「経路」では外した条件と「最も上流の経路を表示」、「遺伝子」では
+        目立たせる遺伝子（チェックした条件で大きく変化した遺伝子の ID。すべてにチェックしていれば null）。"""
+        if getattr(self, "cond_mode", None) is not None and self.cond_mode.currentData() == "genes" and self.model is not None:
+            changed = self._changed_genes()
+            ids = None if changed is None else [f"p{pid}" for orf in changed if (pid := self._orf_pid(orf)) is not None]
+            return f"app.setConditionFilter([], false, {json.dumps(ids)})"
+        return f"app.setConditionFilter({json.dumps(sorted(self.conditions_off))}, {json.dumps(self.cond_top.isChecked())}, null)"
 
     def set_condition_top(self, on: bool) -> None:
         """「最も上流の経路を表示」を決める（登録の呼び出し。戻る・進むの履歴には残さない）。"""
@@ -1805,6 +1862,8 @@ class NetworkTab(QWidget):
         data = {"panes": [p.state() for p in self.panes], "layout": self.layout_combo.currentData(),
                 "color_mode": self.color_mode(), "hidden": self.hidden_filters(),
                 "conditions_off": sorted(self.conditions_off), "conditions_top": self.cond_top.isChecked(),
+                "gene_conditions_off": sorted(getattr(self, "gene_conditions_off", set())),
+                "gene_condition_kind": self._cond_kind() if getattr(self, "cond_kind_buttons", None) else "mrna",
                 "edge_color": self.edge_color_combo.currentData(), "display": self.display_options,
                 "data_condition": self.data_cond_combo.currentData(),
                 "deletion_strain": self.del_strain_combo.currentData(),

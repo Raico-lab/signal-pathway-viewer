@@ -406,7 +406,7 @@
   // pathFocus: 遺伝子をクリックしたとき、その遺伝子を通る経路（遺伝子と線）。それ以外の経路を少し薄くする
   // relAnchor: 「経路」タブで選んだ基準の遺伝子（緑で選んだ遺伝子とのつながりをアプリが求めて強調する）
   // pathMarks: 制御遺伝子探索で観測した遺伝子の印（id → "ok" / "bad" / "none"）
-  let condOff = new Set(), condTop = false;
+  let condOff = new Set(), condTop = false, condGenes = null;   // condGenes: 条件タブの「遺伝子」で目立たせる遺伝子（null なら絞らない）
   // 最も上流の経路: on の線のうち、起点になるもの（始まりの遺伝子に on の線が入ってこないもの）だけを残す。
   // 起点のない輪（on の線だけで回っている部分）は、どこが起点か決められないので輪の線をすべて残す
   function topmostEdges(on) {
@@ -431,6 +431,13 @@
   function applyConditionFilter() {
     cy.batch(() => {
       cy.elements(".cond-dim").removeClass("cond-dim");
+      if (condGenes) {
+        // 条件タブの「遺伝子」: チェックした条件で大きく変化した遺伝子だけを目立たせ、ほかの遺伝子と、薄くした遺伝子につながる線を薄くする
+        const dim = cy.nodes().filter((n) => isGene(n) && !condGenes.has(n.id()));
+        dim.addClass("cond-dim");
+        dim.connectedEdges().addClass("cond-dim");
+        return;
+      }
       if (!condOff.size && !condTop) return;
       // 目立たせる遺伝子は、選んだ条件の線のうち実際に見えているものの両端だけ（緑の選択で薄くした線・
       // 転写因子どうしで隠した線・凡例で隠した線は数えない。数えると線のない遺伝子だけが目立ってしまう）
@@ -1578,9 +1585,10 @@
     },
     // 左の「条件」タブ: off は外した条件のキー。外したものがなければ普段どおり。外したものがあれば、
     // 選んでいる条件を 1 つでも持つ線と、その両端の遺伝子だけを目立たせる（「条件の記録なし」も条件の 1 つとして扱う）
-    setConditionFilter(off, top = false) {
+    setConditionFilter(off, top = false, genes = null) {
       condOff = new Set(off || []);
       condTop = !!top;
+      condGenes = genes ? new Set(genes) : null;
       applyConditionFilter();
     },
     setColorMode(mode) { colorMode = mode; refreshStyle(); },
