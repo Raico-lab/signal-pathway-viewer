@@ -409,33 +409,30 @@ class NetworkTab(QWidget):
 
     def _build_deletion_panel(self) -> QWidget:
         """左の「破壊株」タブ: 遺伝子を 1 つ壊した株での実測（data/expression.db の strains・deletion。
-        mRNA は Deleteome、リン酸化は Bodenmiller 2010）を地図で見る。株を一覧から選び（壊した遺伝子の名前で絞り込むか、
-        ある遺伝子の発現が下がった・上がった株を探す）、データの種類を選ぶ。株を押すと、地図をその株の実測で色分けする
-        （地図の上の「色」「破壊株」の選択肢とそろう）。一覧の株は、今の地図の遺伝子が変わった株を黒、ほかを灰色にする。"""
+        mRNA は Deleteome、リン酸化は Bodenmiller 2010）を地図で見る。上の一覧は、壊した遺伝子（株）か、今の地図の
+        遺伝子。名前で絞り込める。株を押すと、地図をその株の実測で色分けする（地図の上の「色」「破壊株」の選択肢と
+        そろう）。遺伝子を押すと、下の欄にその遺伝子を変化させた株が並ぶ。株は今の地図の遺伝子が変わった株、遺伝子は
+        どれかの株で変化した遺伝子を黒、ほかを灰色にする。"""
         try:
             saved = json.loads(VIEW_FILE.read_text(encoding="utf-8")).get("deletion") or {}
         except (OSError, ValueError, AttributeError):
             saved = {}
         panel = QWidget()
         outer = QVBoxLayout(panel)
-        # 探し方: 壊した遺伝子の名前で絞り込む／地図の遺伝子を選び、その遺伝子が変化した破壊株を探す
+        # 探し方: 壊した遺伝子（株）を選ぶ／変化した遺伝子を選び、その遺伝子を変化させた破壊株を探す
         search_row = QHBoxLayout()
         self.del_search_mode = QComboBox()
         for text, key in (("壊した遺伝子", "strain"), ("変化した遺伝子", "changed")):
             self.del_search_mode.addItem(text, key)
         self.del_search_mode.setToolTip("壊した遺伝子: 株を、壊した遺伝子の名前で絞り込みます\n"
-                                        "変化した遺伝子: 今の地図の遺伝子から選ぶと、その遺伝子の発現（リン酸化）が変化した"
+                                        "変化した遺伝子: 今の地図の遺伝子を選ぶと、その遺伝子の発現（リン酸化）を変化させた"
                                         "破壊株を、変化の大きい順に並べます。どれかの破壊株で変化した遺伝子は黒、変化しなかった遺伝子は灰色")
         search_row.addWidget(self.del_search_mode)
         self.del_search = QLineEdit()
-        self.del_search.setPlaceholderText("壊した遺伝子の名前で絞り込む")
+        self.del_search.setPlaceholderText("名前で絞り込む")
         self.del_search.setClearButtonEnabled(True)
         search_row.addWidget(self.del_search, 1)
-        # 「変化した遺伝子」のとき検索欄の代わりに出す、今の地図の遺伝子の選択肢
-        self.del_gene_combo = QComboBox()
-        self.del_gene_combo.setToolTip("今の地図の遺伝子。どれかの破壊株で変化した遺伝子は黒、変化しなかった遺伝子は灰色")
-        self.del_gene_combo.setVisible(False)
-        search_row.addWidget(self.del_gene_combo, 1)
+        self.del_gene: str | None = None   # 「変化した遺伝子」で選んだ遺伝子の ORF
         outer.addLayout(search_row)
         self.del_list = QListWidget()
         self.del_list.setMinimumHeight(120)
@@ -445,7 +442,6 @@ class NetworkTab(QWidget):
         # 選択肢の中身を作ってからつなぐ（作る途中の切り替えで一覧を作り直さない）
         self.del_search_mode.currentIndexChanged.connect(lambda _i: self._on_deletion_search_mode())
         self.del_search.textChanged.connect(lambda _t: self._refill_deletion_list())
-        self.del_gene_combo.currentIndexChanged.connect(lambda _i: self._refill_deletion_list())
         kinds = QHBoxLayout()
         kinds.addWidget(QLabel("データ"))
         self.del_kind_group = QButtonGroup(self)
@@ -485,51 +481,48 @@ class NetworkTab(QWidget):
         return next((k for k, b in self.del_kind_buttons.items() if b.isChecked()), "del_mrna")
 
     def _on_deletion_search_mode(self) -> None:
-        changed = self.del_search_mode.currentData() == "changed"
-        self.del_search.setVisible(not changed)
-        self.del_list.setVisible(not changed)
-        self.del_gene_combo.setVisible(changed)
-        if changed:
-            self._fill_deletion_genes()
         self._refill_deletion_list()
 
-    def _fill_deletion_genes(self) -> None:
-        """「変化した遺伝子」の選択肢を、操作中の表示枠の地図の遺伝子（名前の順）で作り直す。選んでいるデータ（mRNA・リン酸化）で、
-        どれかの破壊株で変化した遺伝子は黒、変化しなかった遺伝子は灰色。選んでいた遺伝子が残っていれば選んだままにする。"""
-        if self.model is None:
+    def _on_deletion_map_changed(self) -> None:
+        """地図の遺伝子が変わった: 変化した遺伝子で探しているときは一覧を今の地図の遺伝子で作り直し、
+        壊した遺伝子で探しているときは株の黒と灰色だけを塗り直す。"""
+        if getattr(self, "del_list", None) is None:
             return
+        if self.del_search_mode.currentData() == "changed":
+            self._refill_deletion_list()
+        else:
+            self._update_deletion_presence()
+
+    def _map_orfs(self) -> set[str]:
+        """操作中の表示枠の地図にある遺伝子の ORF。"""
+        if self.model is None:
+            return set()
         pane = self.active_pane
-        pids = pane.sub.nodes if pane is not None and pane.sub else set()
-        genes = sorted({(p.gene_name, (p.standard_name or "").upper()) for pid in pids
-                        if (p := self.model.proteins.get(pid)) is not None and p.standard_name})
-        base = {"del_mrna": "mrna", "del_phospho": "phospho"}[self._del_kind()]
-        changed = expression.changed_genes(base)
-        current = self.del_gene_combo.currentData()
-        self.del_gene_combo.blockSignals(True)
-        self.del_gene_combo.clear()
-        self.del_gene_combo.addItem("（地図の遺伝子を選ぶ）", None)
-        black, gray = QColor("#212121"), QColor("#9e9e9e")
-        for name, orf in genes:
-            self.del_gene_combo.addItem(name, orf)
-            self.del_gene_combo.setItemData(self.del_gene_combo.count() - 1, black if orf in changed else gray,
-                                            Qt.ItemDataRole.ForegroundRole)
-        self.del_gene_combo.setCurrentIndex(max(0, self.del_gene_combo.findData(current)) if current else 0)
-        self.del_gene_combo.blockSignals(False)
+        return {(self.model.proteins[pid].standard_name or "").upper()
+                for pid in (pane.sub.nodes if pane is not None and pane.sub else []) if pid in self.model.proteins} - {""}
 
     def _refill_deletion_list(self) -> None:
-        """破壊株タブの上の株の一覧を作り直す（壊した遺伝子で探すとき。名前か ORF に検索欄の文字を含む株を名前の順。
-        何も入れていなければ空）。変化した遺伝子で探すときは上の一覧は隠し、下の欄に結果を出す（_show_gene_changes）。"""
+        """破壊株タブの上の一覧を作り直す。壊した遺伝子で探すときは株、変化した遺伝子で探すときは今の地図の遺伝子。
+        名前か ORF に検索欄の文字を含むものを名前の順（何も入れていなければ全部）。"""
         mode = self.del_search_mode.currentData()
-        entries: list[tuple[str | None, str]] = []
+        entries: list[tuple[str, str]] = []
         words = self.del_search.text().strip().upper()
-        if mode == "strain" and words:   # 何も入れていなければ何も出さない
+        if mode == "strain":
             for orf, name, kinds in expression.deletion_strains():
-                if words not in name.upper() and words not in orf.upper():
+                if words and words not in name.upper() and words not in orf.upper():
                     continue
                 tag = "（mRNA・リン酸化）" if len(kinds) > 1 else "（リン酸化）" if kinds == {"phospho"} else ""
                 entries.append((orf, name + tag))
+            current = self.deletion_strain()
+        else:
+            names = expression.gene_names()
+            for orf in self._map_orfs():
+                name = names.get(orf, orf)
+                if not words or words in name.upper() or words in orf:
+                    entries.append((orf, name))
+            entries.sort(key=lambda e: e[1].upper())
+            current = self.del_gene
         self.del_list.clear()
-        current = self.deletion_strain()
         for orf, label in entries:
             item = QListWidgetItem(label)
             item.setData(Qt.ItemDataRole.UserRole, orf)
@@ -541,35 +534,32 @@ class NetworkTab(QWidget):
 
     def _on_deletion_strain_clicked(self, item) -> None:
         orf = item.data(Qt.ItemDataRole.UserRole)
-        if orf:
+        if not orf:
+            return
+        if self.del_search_mode.currentData() == "changed":
+            self.del_gene = orf
+            self._sync_deletion_panel()
+        else:
             self._choose_strain(orf)
 
     def _update_deletion_presence(self) -> None:
-        """破壊株タブの株の一覧: 操作中の表示枠の地図に、その株で変わった遺伝子があれば黒、なければ灰色にする。
-        選んでいるデータ（mRNA・リン酸化）で見る。変わった = 取り込んだ値（mRNA は p < 0.05 かつ 1.4 倍以上、リン酸化は報告された部位）。"""
+        """破壊株タブの上の一覧を黒と灰色に塗り分ける（選んでいるデータで見る。変わった = 取り込んだ値。mRNA は
+        p < 0.05 かつ 1.4 倍以上、リン酸化は報告された部位）。株は、操作中の表示枠の地図の遺伝子がその株で変わっていれば黒。
+        遺伝子（今の地図の遺伝子）は、どれかの株で変化していれば黒。"""
         if getattr(self, "del_list", None) is None or self.model is None:
             return
-        if self.del_search_mode.currentData() == "changed" and not getattr(self, "_filling_genes", False):
-            self._filling_genes = True   # 地図が変わった: 遺伝子の選択肢も今の地図に合わせる
-            try:
-                before = [self.del_gene_combo.itemData(i) for i in range(self.del_gene_combo.count())]
-                self._fill_deletion_genes()
-                if [self.del_gene_combo.itemData(i) for i in range(self.del_gene_combo.count())] != before:
-                    self._refill_deletion_list()
-                    return
-            finally:
-                self._filling_genes = False
-        pane = self.active_pane
-        shown = {(self.model.proteins[pid].standard_name or "").upper()
-                 for pid in (pane.sub.nodes if pane is not None and pane.sub else []) if pid in self.model.proteins}
+        shown = self._map_orfs()
+        changed = self.del_search_mode.currentData() == "changed"
         base = {"del_mrna": "mrna", "del_phospho": "phospho"}[self._del_kind()]
         targets = expression.deletion_targets(base)
+        moved = expression.changed_genes(base) if changed else set()
         black, gray = QColor("#212121"), QColor("#9e9e9e")
         for i in range(self.del_list.count()):
             item = self.del_list.item(i)
             orf = item.data(Qt.ItemDataRole.UserRole)
-            if not orf:
-                item.setForeground(gray)
+            if changed:
+                item.setForeground(black if orf in moved else gray)
+                item.setToolTip("どれかの破壊株で変化しました" if orf in moved else "どの破壊株でも変化していません")
                 continue
             hits = [g for g in targets.get(orf, {}) if g in shown]
             item.setForeground(black if hits else gray)
@@ -591,8 +581,7 @@ class NetworkTab(QWidget):
 
     def _on_deletion_kind(self, kind: str) -> None:
         if self.del_search_mode.currentData() != "strain":
-            self._fill_deletion_genes()     # 変化した遺伝子で探しているときは、データの種類で色と結果が変わる
-            self._refill_deletion_list()
+            self._refill_deletion_list()     # 変化した遺伝子で探しているときは、データの種類で一覧と結果が変わる
         else:
             self._update_deletion_presence()
         if self.deletion_kind() and self.color_mode() != kind:
@@ -611,9 +600,10 @@ class NetworkTab(QWidget):
             self.del_kind_buttons[dkind].setChecked(True)
         for w in self.del_kind_buttons.values():
             w.blockSignals(False)
+        mark = self.del_gene if self.del_search_mode.currentData() == "changed" else orf
         for i in range(self.del_list.count()):
             item = self.del_list.item(i)
-            if item.data(Qt.ItemDataRole.UserRole) == orf:
+            if item.data(Qt.ItemDataRole.UserRole) == mark:
                 if self.del_list.currentItem() is not item:
                     self.del_list.setCurrentItem(item)
                     self.del_list.scrollToItem(item)
@@ -656,11 +646,11 @@ class NetworkTab(QWidget):
     def _show_gene_changes(self, base: str) -> None:
         """「変化した遺伝子」で選んだ遺伝子について、下の欄に、その遺伝子を変化させた破壊株（壊した遺伝子と値）を
         変化の大きい順に出す（遺伝子を選んでいなければ何も出さない）。株を押すと地図をその株で色分けする。"""
-        gene = self.del_gene_combo.currentData()
+        gene = self.del_gene
         if not gene:
             self.del_summary.setText("")
             return
-        name = self.del_gene_combo.currentText()
+        name = expression.gene_names().get(gene, gene)
         pts = sorted((x for x in expression.changed_in(gene) if x.kind == base), key=lambda x: -abs(x.value))
         kind = "mRNA" if base == "mrna" else "リン酸化"
         if not pts:
@@ -668,8 +658,8 @@ class NetworkTab(QWidget):
             return
         sources = "・".join(sorted({x.source for x in pts}))
         up = sum(1 for x in pts if x.value > 0)
-        self.del_summary.setText(f"<b>{html.escape(name)} の{kind}を変化させた破壊株</b>（{html.escape(sources)}）<br>"
-                                 f"上げた株 {up}・下げた株 {len(pts) - up}")
+        self.del_summary.setText(f"<b>{html.escape(name)} の{kind}を変化させた破壊株</b><br>"
+                                 f"上げた株 {up}・下げた株 {len(pts) - up}（{html.escape(sources)}）")
         current = self.deletion_strain() if self.deletion_kind() else None
         for x in pts:
             item = QListWidgetItem(f"{x.strain_name}{(' ' + x.site) if x.site else ''}   {x.value:+.2f}")
@@ -1502,7 +1492,7 @@ class NetworkTab(QWidget):
         if changed:
             self._rebuild_trf_panel()   # 左の TFs 一覧は操作中の表示枠の注目に合わせる
             self._update_condition_presence()
-            self._update_deletion_presence()
+            self._on_deletion_map_changed()
             # 経路は操作中の表示枠にだけ出す（ほかの枠は普段の地図に戻す）
             for p in self.panes:
                 if p is not pane:
@@ -1554,7 +1544,7 @@ class NetworkTab(QWidget):
         if pane is self.active_pane:
             self._update_relation_genes()   # 地図上の遺伝子が変わった
             self._update_condition_presence()
-            self._update_deletion_presence()
+            self._on_deletion_map_changed()
 
     def _gene_names(self) -> list[str]:
         return sorted(p.gene_name for p in self.model.proteins.values())

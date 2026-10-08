@@ -239,6 +239,16 @@ def find_gene(text: str) -> tuple[str, str] | None:
     return (row[0], row[1]) if row else None
 
 
+_names_cache: dict[str, str] = {}
+
+
+def gene_names() -> dict[str, str]:
+    """ORF → 遺伝子名（なければ ORF）。破壊株タブの一覧に使う（一度読んだら覚えておく）。"""
+    if not _names_cache and _db() is not None:
+        _names_cache.update({orf: name or orf for orf, name in _db().execute("SELECT orf, name FROM genes")})
+    return _names_cache
+
+
 def changed_genes(kind: str) -> set[str]:
     """どれかの破壊株で変化した遺伝子の ORF（kind は mrna / phospho）。"""
     return {g for genes in deletion_targets(kind).values() for g in genes}
