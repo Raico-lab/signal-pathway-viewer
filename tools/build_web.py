@@ -92,6 +92,11 @@ def build(out: Path = OUT) -> dict:
     shutil.copytree(ROOT / "tor_app" / "web", web, ignore=shutil.ignore_patterns(".*"))
     html = (web / "network.html").read_text(encoding="utf-8")
     html = html.replace("qrc:///qtwebchannel/qwebchannel.js", "qwebchannel.js")
+    # 地図のページの JS・CSS は、中身が変わったら取り直させる（ブラウザが古いものを覚えていると、Python 側と食い違う）
+    for name in ("network.js", "router.js", "network.css"):
+        tag = hashlib.sha256((web / name).read_bytes()).hexdigest()[:10]
+        for attr in ("src", "href"):
+            html = html.replace(f'{attr}="{name}"', f'{attr}="{name}?v={tag}"')
     (web / "network.html").write_text(html, encoding="utf-8")
     shutil.copy2(WEBAPP / "qwebchannel.js", web / "qwebchannel.js")
     (out / ".nojekyll").write_text("")

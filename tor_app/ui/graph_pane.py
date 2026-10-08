@@ -282,7 +282,7 @@ class GraphPane(QFrame):
         self.lod_label.setStyleSheet("color:#777;")
         self.clear_settings_button = self._small_button(
             "設定をクリア", lambda: self.tab.reset_settings(self),
-            "TFs・経路・条件・配置・色・線・凡例の設定を最初の状態に戻します（注目・拡張・段数はそのまま）")
+            "TF・経路・条件・配置・色・線・凡例の設定を最初の状態に戻します（注目・拡張・段数はそのまま）")
         self.info_bar = QHBoxLayout()
         for w in (QLabel("上流"), self.up_spin, QLabel("段 下流"), self.down_spin, QLabel("段"), self.focus_label,
                   self.clear_settings_button):

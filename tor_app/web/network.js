@@ -1687,6 +1687,8 @@
       else if (valid.length) highlightMany(cy.collection(valid.map((id) => cy.getElementById(id))));
       else highlight(null);
     },
+    // 左の「遺伝子」タブで、緑で選んでいる遺伝子をもう一度押したとき: その遺伝子へ移る（凡例の名前を押したときと同じ）
+    zoomToGene(id) { zoomToGene(id); },
     // 緑（1 回目のクリック）で選択中の遺伝子の ID（なければ null）
     pickedNode() { return clickStage === 1 && selectedNodeId ? selectedNodeId : null; },
     // 緑で選択中のすべて（Shift で複数選んだもの）

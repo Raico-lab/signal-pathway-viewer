@@ -314,6 +314,18 @@ class QListWidget(QAbstractItemView):
         if self._extend_mode() and (ev.metaKey or ev.ctrlKey):
             self._set_selected(item, item not in self._selected)
             self._set_current(item, select=False)
+        elif self._extend_mode() and ev.shiftKey and self._current in self._items and item is not self._current:
+            # Shift: 今の項目から押した項目までを選ぶ（Qt の ExtendedSelection と同じ）。今の項目は動かさない
+            ev.preventDefault()   # 文字の範囲選択にしない
+            a, b = sorted((self._items.index(self._current), self._items.index(item)))
+            old = list(self._selected)
+            self._selected = [it for it in self._items[a:b + 1] if not it._hidden
+                              and int(it._flags) & int(Qt.ItemFlag.ItemIsSelectable)]
+            for it in old + self._selected:
+                if it._el is not None:
+                    it._el.classList.toggle("selected", it in self._selected)
+            if old != self._selected:
+                self.itemSelectionChanged.emit()
         else:
             self._set_current(item)
 

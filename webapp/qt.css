@@ -159,7 +159,7 @@ textarea.qtextedit { padding: 4px 6px; resize: vertical; }
 .qtabs { display: flex; flex-direction: column; }
 .qtabs-bar { display: flex; gap: 1px; flex: 0 0 auto; padding: 0 2px; position: relative; z-index: 1; overflow-x: auto; scrollbar-width: none; }
 .qtabs-bar::-webkit-scrollbar { display: none; }
-.qtab { border: 1px solid var(--line); border-bottom: none; background: linear-gradient(#f4f4f4, #e3e3e3); padding: 4px 12px; border-radius: 5px 5px 0 0; cursor: default; white-space: nowrap; margin-top: 2px; }
+.qtab { border: 1px solid var(--line); border-bottom: none; background: linear-gradient(#f4f4f4, #e3e3e3); padding: 4px 9px; border-radius: 5px 5px 0 0; cursor: default; white-space: nowrap; margin-top: 2px; }
 .qtab.current { background: #fff; margin-top: 0; padding-bottom: 6px; margin-bottom: -1px; font-weight: 600; }
 .qtab:disabled { color: #aaa; }
 .qtabs-stack { flex: 1 1 auto; min-height: 0; border: 1px solid var(--line); background: #fbfbfb; display: flex; flex-direction: column; }

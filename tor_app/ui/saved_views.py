@@ -21,7 +21,7 @@ PARTS = {
     "focus": ("注目", "注目している遺伝子・上流/下流の段数"),
     "grown": ("拡張", "拡張と、それで加えた遺伝子・隠した段"),
     "picked": ("選択", "地図で緑に選んでいる遺伝子"),
-    "trf": ("TFs", "左の TFs 一覧でチェックした、マップの一番上の段に表示する転写因子"),
+    "trf": ("TF", "左の TF 一覧でチェックした、マップの一番上の段に表示する転写因子"),
     "relation": ("経路", "「経路」タブのチェックした遺伝子・表示経路・経路の段数・基準の遺伝子"),
     "conditions": ("条件", "左の「条件」タブで外した条件と、最も上流の経路のチェック"),
     "legend": ("凡例", "凡例の役割・制御の種類・作用のチェックと「表示」欄"),
@@ -272,7 +272,7 @@ class SavedViewsPanel(QWidget):
                          + (f"、加えた遺伝子 {len(g.get('extra', []))} 個" if g.get("extra") else ""))
         trf = parts["trf"] if "trf" in parts else parts.get("focus", {}).get("trf")
         if trf is not None:
-            lines.append(f"TFs: {'、'.join(trf) or 'なし'}")
+            lines.append(f"TF: {'、'.join(trf) or 'なし'}")
         if "picked" in parts:
             lines.append(f"緑の選択: {'、'.join(parts['picked']) or 'なし'}")
         if "relation" in parts:

@@ -388,10 +388,11 @@ class NetworkTab(QWidget):
         self.trf_scroll.setWidget(panel)
         self.trf_scroll.setWidgetResizable(True)
         self.trf_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        # 左側はタブで切り替える: TFs（転写因子）と、経路（選んだ遺伝子どうしの経路）
+        # 左側はタブで切り替える: 遺伝子（今の地図の遺伝子）・TFs（転写因子）・経路（選んだ遺伝子どうしの経路）など
         self.left_tabs = QTabWidget()
         self.left_tabs.setMinimumWidth(290)   # 「経路」の中身（表示経路の選択肢など）が横にはみ出さない幅
-        self.left_tabs.addTab(self.trf_scroll, "TFs")
+        self.left_tabs.addTab(self._build_gene_panel(), "遺伝子")
+        self.left_tabs.addTab(self.trf_scroll, "TF")
         self.left_tabs.addTab(self._build_relation_panel(), "経路")
         self.left_tabs.addTab(self._build_condition_panel(), "条件")
         if expression.has_deletions():
@@ -402,6 +403,89 @@ class NetworkTab(QWidget):
         saved_scroll.setWidgetResizable(True)
         saved_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.left_tabs.addTab(saved_scroll, "登録")
+        # タブの見出しが全部見える幅にする（はみ出すと見出しが矢印で隠れる）
+        self.left_tabs.setMinimumWidth(max(350, self.left_tabs.tabBar().sizeHint().width() + 4))
+
+    # ================= 左の「遺伝子」タブ =================
+    def _build_gene_panel(self) -> QWidget:
+        """左の「遺伝子」タブ: 操作中の表示枠の地図にある遺伝子を、注目・拡張・そのほかに分けて名前の順に並べる。
+        名前で絞り込める。一覧の選択は地図の緑の選択と連動する（Shift・⌘ で複数。押した遺伝子の説明を右側に出し、
+        緑で選んでいる遺伝子をもう一度押すと、地図でその遺伝子へ移る）。"""
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        self.gene_search = QLineEdit()
+        self.gene_search.setPlaceholderText("名前で絞り込む")
+        self.gene_search.setClearButtonEnabled(True)
+        self.gene_search.textChanged.connect(lambda _t: self._refill_gene_list())
+        layout.addWidget(self.gene_search)
+        self.gene_list = QListWidget()
+        self.gene_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.gene_list.itemClicked.connect(self._on_gene_list_clicked)
+        layout.addWidget(self.gene_list, 1)
+        layout.addWidget(self.help_button("genes"))
+        return panel
+
+    def _refill_gene_list(self) -> None:
+        """「遺伝子」タブの一覧を、操作中の表示枠の地図の遺伝子で作り直す（注目・拡張・そのほかの順に見出しを付け、
+        それぞれ名前の順。緑で選んでいる遺伝子は選んだままにする）。"""
+        if getattr(self, "gene_list", None) is None:
+            return
+        pane = self.active_pane
+        words = self.gene_search.text().strip().upper()
+        groups: list[tuple[str, list[tuple[str, int]]]] = []
+        if self.model is not None and pane is not None and pane.sub:
+            shown = {pid: p.gene_name for pid in pane.sub.nodes if (p := self.model.proteins.get(pid)) is not None
+                     and (not words or words in p.gene_name.upper())}
+            focus = set(pane.focus_ids()) & shown.keys()
+            grown = (set(pane.grown) & shown.keys()) - focus
+            rest = shown.keys() - focus - grown
+            groups = [(title, sorted(((shown[p], p) for p in pids), key=lambda g: g[0].upper()))
+                      for title, pids in (("注目", focus), ("拡張", grown), ("そのほか", rest)) if pids]
+        self.gene_list.blockSignals(True)
+        self.gene_list.clear()
+        for title, genes in groups:
+            head = QListWidgetItem(title)
+            head.setFlags(Qt.ItemFlag.NoItemFlags)   # 見出し（選べない）
+            font = head.font()
+            font.setBold(True)
+            head.setFont(font)
+            head.setForeground(QColor("#555"))
+            self.gene_list.addItem(head)
+            for name, pid in genes:
+                item = QListWidgetItem(name)
+                item.setData(Qt.ItemDataRole.UserRole, pid)
+                self.gene_list.addItem(item)
+        self.gene_list.blockSignals(False)
+        self._sync_gene_list(pane.picked if pane is not None else [])
+
+    def _sync_gene_list(self, picked: list[int]) -> None:
+        """「遺伝子」タブの一覧の選択を、地図の緑の選択にそろえる。"""
+        if getattr(self, "gene_list", None) is None:
+            return
+        chosen = set(picked)
+        self.gene_list.blockSignals(True)
+        for i in range(self.gene_list.count()):
+            item = self.gene_list.item(i)
+            pid = item.data(Qt.ItemDataRole.UserRole)
+            if pid is not None:
+                item.setSelected(pid in chosen)
+        self.gene_list.blockSignals(False)
+
+    def _on_gene_list_clicked(self, item) -> None:
+        """一覧で遺伝子を押した: 選んでいる遺伝子を地図の緑の選択にし、押した遺伝子の説明を出す。
+        緑で選んでいた遺伝子をもう一度押したときは、地図でその遺伝子へ移る（凡例の名前を押したときと同じ）。"""
+        pane = self.active_pane
+        pid = item.data(Qt.ItemDataRole.UserRole)
+        if pane is None or pid is None:
+            return
+        was_picked = pid in pane.picked
+        pids = [p for it in self.gene_list.selectedItems() if (p := it.data(Qt.ItemDataRole.UserRole)) is not None]
+        if set(pids) != set(pane.picked):
+            pane.js(f"app.setPicked({json.dumps([f'p{p}' for p in pids])})")
+        if pid in pids:
+            self.show_node(pid, pane)
+            if was_picked:
+                pane.js(f"app.zoomToGene({json.dumps(f'p{pid}')})")
 
     # ================= 左の「破壊株」タブ =================
     STRONG_LOG2 = 0.766       # 「大きく変わった」の目安: 1.7 倍（log2 1.7。Deleteome の論文の基準）。要約の数に使う
@@ -1057,6 +1141,8 @@ class NetworkTab(QWidget):
 
     def _on_picked_changed(self, pane: GraphPane, pids: list[int]) -> None:
         self._save_view()   # 緑の選択も次回起動時に戻す（経路のチェックとは独立）
+        if pane is self.active_pane:
+            self._sync_gene_list(pids)   # 左の「遺伝子」タブの選択もそろえる
 
     def apply_relation(self) -> None:
         """「経路」タブの今の設定を、操作中の表示枠に反映し、経路の一覧を作り直す（OFF なら普段の地図に戻す）。"""
@@ -1493,6 +1579,7 @@ class NetworkTab(QWidget):
             self._rebuild_trf_panel()   # 左の TFs 一覧は操作中の表示枠の注目に合わせる
             self._update_condition_presence()
             self._on_deletion_map_changed()
+            self._refill_gene_list()
             # 経路は操作中の表示枠にだけ出す（ほかの枠は普段の地図に戻す）
             for p in self.panes:
                 if p is not pane:
@@ -1545,6 +1632,7 @@ class NetworkTab(QWidget):
             self._update_relation_genes()   # 地図上の遺伝子が変わった
             self._update_condition_presence()
             self._on_deletion_map_changed()
+            self._refill_gene_list()
 
     def _gene_names(self) -> list[str]:
         return sorted(p.gene_name for p in self.model.proteins.values())
@@ -1652,7 +1740,7 @@ class NetworkTab(QWidget):
                     cb = QCheckBox(self.model.names[n] + (" 表示中" if elsewhere else "") + ("  ⇄" if shared else ""))
                     cb.setStyleSheet(f"QCheckBox {{ color: {color}; font-weight: normal; }}")
                     cb.setToolTip(self.model.proteins[n].description
-                                  + ("\n⇄ 複数の遺伝子の TFs。チェックは連動します" if shared else ""))
+                                  + ("\n⇄ 複数の遺伝子の TF。チェックは連動します" if shared else ""))
                     cb.setChecked(n in pane.trf or elsewhere)
                     cb.setEnabled(not elsewhere)
                     cb.setFocusPolicy(Qt.FocusPolicy.NoFocus)
