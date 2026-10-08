@@ -443,13 +443,17 @@ class NetworkTab(QWidget):
                       for title, pids in (("注目", focus), ("拡張", grown), ("そのほか", rest)) if pids]
         self.gene_list.blockSignals(True)
         self.gene_list.clear()
+        # 見出しは地図の印と同じ色（注目＝橙・拡張＝紫）の帯にし、数を添える
+        heads = {"注目": ("#e65100", "#fff3e0"), "拡張": ("#6a1b9a", "#f3e5f5"), "そのほか": ("#455a64", "#eceff1")}
         for title, genes in groups:
-            head = QListWidgetItem(title)
+            head = QListWidgetItem(f"{title}（{len(genes)}）")
             head.setFlags(Qt.ItemFlag.NoItemFlags)   # 見出し（選べない）
             font = head.font()
             font.setBold(True)
             head.setFont(font)
-            head.setForeground(QColor("#555"))
+            fg, bg = heads[title]
+            head.setForeground(QColor(fg))
+            head.setBackground(QColor(bg))
             self.gene_list.addItem(head)
             for name, pid in genes:
                 item = QListWidgetItem(name)
@@ -489,7 +493,6 @@ class NetworkTab(QWidget):
 
     # ================= 左の「破壊株」タブ =================
     STRONG_LOG2 = 0.766       # 「大きく変わった」の目安: 1.7 倍（log2 1.7。Deleteome の論文の基準）。要約の数に使う
-    DELETION_LIST_MAX = 60    # タブの「変わった遺伝子」の一覧に並べる数
 
     def _build_deletion_panel(self) -> QWidget:
         """左の「破壊株」タブ: 遺伝子を 1 つ壊した株での実測（data/expression.db の strains・deletion。
@@ -623,6 +626,9 @@ class NetworkTab(QWidget):
         if self.del_search_mode.currentData() == "changed":
             self.del_gene = orf
             self._sync_deletion_panel()
+            pid = self._orf_pid(orf)
+            if pid is not None:
+                self.show_node(pid, self.active_pane)   # 選んだ遺伝子の説明も出す
         else:
             self._choose_strain(orf)
 
@@ -716,16 +722,12 @@ class NetworkTab(QWidget):
         unit = "部位" if base == "phospho" else "遺伝子"
         self.del_summary.setText(f"<b>{html.escape(name)} 破壊株</b>（{html.escape(info[base]['source'])}）<br>"
                                  f"上がった{unit} {up}・下がった{unit} {len(pts) - up}<br>うち 1.7 倍以上 {strong}")
-        for x in pts[:self.DELETION_LIST_MAX]:
+        for x in pts:   # 省略せずに全部（変化の大きい順）
             text = f"{x.gene_name}{(' ' + x.site) if x.site else ''}   {x.value:+.2f}"
             item = QListWidgetItem(text)
             item.setData(Qt.ItemDataRole.UserRole, ("gene", x.gene))
             item.setForeground(QColor("#c62828" if x.value > 0 else "#1565c0"))
             self.del_changes.addItem(item)
-        if len(pts) > self.DELETION_LIST_MAX:
-            more = QListWidgetItem(f"… ほか {len(pts) - self.DELETION_LIST_MAX}（右側の説明欄の「すべて」で見られます）")
-            more.setForeground(QColor("#777"))
-            self.del_changes.addItem(more)
 
     def _show_gene_changes(self, base: str) -> None:
         """「変化した遺伝子」で選んだ遺伝子について、下の欄に、その遺伝子を変化させた破壊株（壊した遺伝子と値）を
@@ -763,14 +765,14 @@ class NetworkTab(QWidget):
         return cache[1].get(orf.upper())
 
     def _on_deletion_change_clicked(self, item) -> None:
-        """下の欄を押した: 変わった遺伝子ならその説明を出し、破壊株（「変化した遺伝子」のとき）なら地図をその株で色分けする。"""
+        """下の欄を押した: 変わった遺伝子ならその説明を出す。破壊株（「変化した遺伝子」のとき）なら地図をその株で色分けし、
+        壊した遺伝子の説明を出す。"""
         data = item.data(Qt.ItemDataRole.UserRole)
         if not data:
             return
         kind, orf = data
         if kind == "strain":
             self._choose_strain(orf)
-            return
         pid = self._orf_pid(orf)
         if pid is not None:
             self.show_node(pid, self.active_pane)
