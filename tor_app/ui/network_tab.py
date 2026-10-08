@@ -254,7 +254,9 @@ class NetworkTab(QWidget):
         i = self.del_strain_combo.findData(orf)
         if i < 0:
             return
+        self.del_strain_combo.blockSignals(True)
         self.del_strain_combo.setCurrentIndex(i)
+        self.del_strain_combo.blockSignals(False)
         self._color_by_deletion(kind)
 
     def data_js(self) -> str:
@@ -683,7 +685,11 @@ class NetworkTab(QWidget):
             kind = "del_mrna" if "mrna" in kinds else "del_phospho"
         i = self.del_strain_combo.findData(orf)
         if i >= 0:
+            # 株だけを先に変えると、色がまだ役割なので一覧の選択が外れてしまう（色を変えるときにまとめて送る）
+            self.del_strain_combo.blockSignals(True)
             self.del_strain_combo.setCurrentIndex(i)
+            self.del_strain_combo.blockSignals(False)
+            self._save_view()
         self._color_by_deletion(kind)
         self._sync_deletion_panel()
 
