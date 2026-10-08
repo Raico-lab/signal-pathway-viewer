@@ -118,7 +118,9 @@ class NetworkTab(QWidget):
         splitter.addWidget(self.pane_area)
         splitter.addWidget(self.detail_panel)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([290, 910, 300])
+        self.main_splitter = splitter
+        self._fit_left_width()
+        QTimer.singleShot(0, self._fit_left_width)   # ブラウザ版は、ページに置かれてから見出しの幅が分かる
         layout = QVBoxLayout(self)
         layout.addWidget(splitter, 1)
 
@@ -173,7 +175,7 @@ class NetworkTab(QWidget):
         if expression.has_deletions():
             for key, label in expression.DELETION_KINDS.items():
                 self.color_combo.addItem(label, key)
-            tip += ("\n破壊株の mRNA・リン酸化: 右の「破壊株」で選んだ遺伝子を壊した株での、野生型との log2 比（実測）。"
+            tip += ("\n破壊株の mRNA・リン酸化: 左の「破壊株」タブで選んだ株での、野生型との log2 比（実測）。"
                     "壊した遺伝子は黒")
         self.color_combo.setToolTip(tip)
         self.color_combo.currentIndexChanged.connect(lambda: self._save_view())
@@ -189,7 +191,8 @@ class NetworkTab(QWidget):
         saved = self._load_setting("data_condition", "", set(expression.condition_keys()))
         self.data_cond_combo.setCurrentIndex(max(0, self.data_cond_combo.findData(saved or "rapamycin")))
         self.data_cond_combo.currentIndexChanged.connect(lambda: self._save_view())
-        # 破壊株で色分けするときの、壊した遺伝子（Deleteome の mRNA・Bodenmiller のリン酸化のある遺伝子）
+        # 破壊株で色分けするときの、壊した遺伝子（Deleteome の mRNA・Bodenmiller のリン酸化のある遺伝子）。
+        # 画面には出さず（株は左の「破壊株」タブで選ぶ）、選んだ株を覚えておくのに使う
         self.del_strain_combo = QComboBox()
         strains = expression.deletion_strains()
         for orf, name, kinds in strains:
@@ -222,8 +225,6 @@ class NetworkTab(QWidget):
         choices = [("配置", self.layout_combo), ("色", self.color_combo)]
         if self.data_cond_combo.count():
             choices.append(("条件", self.data_cond_combo))
-        if self.del_strain_combo.count():
-            choices.append(("破壊株", self.del_strain_combo))
         return choices + [("線", self.edge_color_combo)]
 
     def data_kind(self) -> str | None:
@@ -403,8 +404,17 @@ class NetworkTab(QWidget):
         saved_scroll.setWidgetResizable(True)
         saved_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.left_tabs.addTab(saved_scroll, "登録")
-        # タブの見出しが全部見える幅にする（はみ出すと見出しが矢印で隠れる）
-        self.left_tabs.setMinimumWidth(max(350, self.left_tabs.tabBar().sizeHint().width() + 4))
+
+    def _fit_left_width(self) -> None:
+        """左側の幅を、タブの見出しを全部並べた幅に合わせる（はみ出すと見出しが矢印で隠れ、広すぎると地図が狭くなる）。"""
+        bar = self.left_tabs.tabBar().sizeHint().width()
+        if bar <= 0:
+            return
+        width = max(290, bar + 4)   # 「経路」の中身（表示経路の選択肢など）が横にはみ出さない幅は残す
+        self.left_tabs.setMinimumWidth(width)
+        total = sum(self.main_splitter.sizes())
+        rest = total - width - 300 if total > width + 600 else 910   # 描く前は全体の幅が分からない
+        self.main_splitter.setSizes([width, rest, 300])   # 右の説明欄は 300
 
     # ================= 左の「遺伝子」タブ =================
     def _build_gene_panel(self) -> QWidget:
@@ -497,7 +507,7 @@ class NetworkTab(QWidget):
     def _build_deletion_panel(self) -> QWidget:
         """左の「破壊株」タブ: 遺伝子を 1 つ壊した株での実測（data/expression.db の strains・deletion。
         mRNA は Deleteome、リン酸化は Bodenmiller 2010）を地図で見る。上の一覧は、壊した遺伝子（株）か、今の地図の
-        遺伝子。名前で絞り込める。株を押すと、地図をその株の実測で色分けする（地図の上の「色」「破壊株」の選択肢と
+        遺伝子。名前で絞り込める。株を押すと、地図をその株の実測で色分けする（地図の上の「色」と、選んだ株を覚える選択肢と
         そろう）。遺伝子を押すと、下の欄にその遺伝子を変化させた株が並ぶ。株は今の地図の遺伝子が変わった株、遺伝子は
         どれかの株で変化した遺伝子を黒、ほかを灰色にする。"""
         try:
@@ -513,7 +523,7 @@ class NetworkTab(QWidget):
             self.del_search_mode.addItem(text, key)
         self.del_search_mode.setToolTip("壊した遺伝子: 株を、壊した遺伝子の名前で絞り込みます\n"
                                         "変化した遺伝子: 今の地図の遺伝子を選ぶと、その遺伝子の発現（リン酸化）を変化させた"
-                                        "破壊株を、変化の大きい順に並べます。どれかの破壊株で変化した遺伝子は黒、変化しなかった遺伝子は灰色")
+                                        "破壊株を、名前の順に並べます。どれかの破壊株で変化した遺伝子は黒、変化しなかった遺伝子は灰色")
         search_row.addWidget(self.del_search_mode)
         self.del_search = QLineEdit()
         self.del_search.setPlaceholderText("名前で絞り込む")
@@ -551,7 +561,7 @@ class NetworkTab(QWidget):
         outer.addWidget(self.del_summary)
         self.del_changes = QListWidget()
         self.del_changes.setMinimumHeight(160)
-        self.del_changes.setToolTip("選んだ破壊株で変わった遺伝子（変化の大きい順）。押すと右側に説明を出します")
+        self.del_changes.setToolTip("選んだ破壊株で変わった遺伝子（名前の順）。押すと右側に説明を出します")
         self.del_changes.itemClicked.connect(self._on_deletion_change_clicked)
         outer.addWidget(self.del_changes, 1)
         outer.addWidget(self.help_button("deletion"))
@@ -657,7 +667,7 @@ class NetworkTab(QWidget):
                             "今の地図の遺伝子は、この株で変わっていません")
 
     def _choose_strain(self, orf: str) -> None:
-        """一覧で株を選んだ: 地図の上の「破壊株」の選択肢をそろえ、地図をその株の実測（選んでいるデータ）で色分けする。
+        """一覧で株を選んだ: 選んだ株を覚える選択肢（画面には出さない）をそろえ、地図をその株の実測（選んでいるデータ）で色分けする。
         その種類の測定がない株なら、ある方の種類に切り替える。"""
         kinds = {m["kind"] for m in expression.strain_info(orf)}
         kind = self._del_kind()
@@ -681,7 +691,7 @@ class NetworkTab(QWidget):
         self._save_view()
 
     def _sync_deletion_panel(self) -> None:
-        """破壊株タブの表示を、地図の上の「色」「破壊株」の選択肢と、選んでいる株にそろえる。"""
+        """破壊株タブの表示を、地図の上の「色」と、選んでいる株にそろえる。"""
         orf = self.deletion_strain()
         dkind = self.deletion_kind()
         for w in self.del_kind_buttons.values():
@@ -722,7 +732,7 @@ class NetworkTab(QWidget):
         unit = "部位" if base == "phospho" else "遺伝子"
         self.del_summary.setText(f"<b>{html.escape(name)} 破壊株</b>（{html.escape(info[base]['source'])}）<br>"
                                  f"上がった{unit} {up}・下がった{unit} {len(pts) - up}<br>うち 1.7 倍以上 {strong}")
-        for x in pts:   # 省略せずに全部（変化の大きい順）
+        for x in sorted(pts, key=lambda x: (x.gene_name.upper(), x.site or "")):   # 省略せずに全部、名前の順
             text = f"{x.gene_name}{(' ' + x.site) if x.site else ''}   {x.value:+.2f}"
             item = QListWidgetItem(text)
             item.setData(Qt.ItemDataRole.UserRole, ("gene", x.gene))
@@ -731,13 +741,13 @@ class NetworkTab(QWidget):
 
     def _show_gene_changes(self, base: str) -> None:
         """「変化した遺伝子」で選んだ遺伝子について、下の欄に、その遺伝子を変化させた破壊株（壊した遺伝子と値）を
-        変化の大きい順に出す（遺伝子を選んでいなければ何も出さない）。株を押すと地図をその株で色分けする。"""
+        名前の順に出す（遺伝子を選んでいなければ何も出さない）。株を押すと地図をその株で色分けする。"""
         gene = self.del_gene
         if not gene:
             self.del_summary.setText("")
             return
         name = expression.gene_names().get(gene, gene)
-        pts = sorted((x for x in expression.changed_in(gene) if x.kind == base), key=lambda x: -abs(x.value))
+        pts = sorted((x for x in expression.changed_in(gene) if x.kind == base), key=lambda x: (x.strain_name.upper(), x.site or ""))
         kind = "mRNA" if base == "mrna" else "リン酸化"
         if not pts:
             self.del_summary.setText(f"{html.escape(name)} の{kind}が変化した破壊株はありません")

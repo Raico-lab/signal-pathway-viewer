@@ -2521,6 +2521,18 @@ class QTabBar(QWidget):
     def count(self):
         return self._tabs.count() if self._tabs else 0
 
+    def sizeHint(self):
+        """見出しを全部並べたときの幅（ページに置かれる前は 0）。"""
+        if not self._tabs:
+            return QSize(0, 0)
+        bar = self._tabs._bar
+        first, last = bar.firstElementChild, bar.lastElementChild
+        if not first or not last:
+            return QSize(0, 0)
+        # 見出しの行は枠の幅いっぱいに広がるので、最初の見出しの左端から最後の見出しの右端までを測る
+        width = last.offsetLeft + last.offsetWidth - first.offsetLeft
+        return QSize(int(width), int(bar.offsetHeight))
+
 
 class QTabWidget(QWidget):
     _hpolicy = QSizePolicy.Policy.Expanding
