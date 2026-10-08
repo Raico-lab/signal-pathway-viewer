@@ -84,9 +84,10 @@ def fetch(pmids: list[str]) -> dict:
 
 def citation(s: dict) -> dict:
     authors = [a["name"] for a in s.get("authors", []) if a.get("authtype") == "Author"]
+    first = authors[0].split(" ")[0] if authors else ""
     if not authors:   # 著者が団体だけの論文（"UniProt Consortium" など）は団体名で
         authors = [a["name"] for a in s.get("authors", []) if a.get("authtype") == "CollectiveName"][:1]
-    first = (authors[0] if " " in authors[0] and not authors[0].split(" ")[-1].isupper() else authors[0].split(" ")[0]) if authors else ""
+        first = authors[0] if authors else ""
     who = f"{first} et al." if len(authors) > 1 else first
     year = (s.get("pubdate") or "")[:4]
     doi = next((a["value"] for a in s.get("articleids", []) if a.get("idtype") == "doi"), "")

@@ -13,7 +13,7 @@
     "SGD GO 注釈"
    ],
    "note": "発現の測定 93 件",
-   "license": "CC BY 4.0（発現の元データは GEO）",
+   "license": "CC BY 4.0（発現は GEO）",
    "cite": [
     "39530598",
     "17724061"

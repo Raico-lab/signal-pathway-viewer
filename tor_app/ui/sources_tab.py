@@ -153,9 +153,12 @@ class SourcesTab(QWidget):
                                for x in [s] + s.get("includes", []))
             # データの利用条件（data/sources.json の license。詳しくは DATA_LICENSES.md）
             lic = f"<br><span style='color:#555;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
-            # サイトが引用を求める論文（papers.json に書誌がなければ PMID で）
+            # サイトが引用を求める論文（著者と年だけ。押すと論文を開く。papers.json に書誌がなければ PMID で）
+            def short(p: dict) -> str:
+                return p["cite"][:p["cite"].find(p["year"]) + len(p["year"])] if p.get("year") in p["cite"] else p["cite"]
+
             cites = "".join(
-                "<br><span style='font-size:10px'>" + (link(papers[pmid]["url"], papers[pmid]["cite"]) if pmid in papers
+                "<br><span style='font-size:10px'>" + (link(papers[pmid]["url"], short(papers[pmid])) if pmid in papers
                                                        else link(f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/", f"PMID {pmid}"))
                 + "</span>" for pmid in s.get("cite", []))
             return (f"<td><a href='{s['url']}' style='color:#000;text-decoration:none;"
