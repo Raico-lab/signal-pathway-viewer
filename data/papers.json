@@ -1,6 +1,30 @@
 {
  "papers": [
   {
+   "pmid": "38552170",
+   "cite": "2024 Genetics",
+   "title": "Updates to the Alliance of Genome Resources central infrastructure",
+   "url": "https://doi.org/10.1093/genetics/iyae049",
+   "first": "",
+   "year": "2024",
+   "authors": "",
+   "used": [
+    "data"
+   ]
+  },
+  {
+   "pmid": "39552041",
+   "cite": "2025 Nucleic Acids Res",
+   "title": "UniProt: the Universal Protein Knowledgebase in 2025",
+   "url": "https://doi.org/10.1093/nar/gkae1010",
+   "first": "",
+   "year": "2025",
+   "authors": "",
+   "used": [
+    "data"
+   ]
+  },
+  {
    "pmid": "9207091",
    "cite": "Aalto et al. 1997 Proc Natl Acad Sci U S A",
    "title": "Mso1p: a yeast protein that functions in secretion and interacts physically and genetically with Sec1p",
@@ -670,6 +694,18 @@
    "authors": "Alejandro-Osorio AL, Huebert DJ, Porcaro DT, Sonntag ME, Nillasithanukroh S, Will JL, Gasch AP",
    "used": [
     "expression"
+   ]
+  },
+  {
+   "pmid": "36866529",
+   "cite": "Aleksander et al. 2023 Genetics",
+   "title": "The Gene Ontology knowledgebase in 2023",
+   "url": "https://doi.org/10.1093/genetics/iyad031",
+   "first": "Aleksander",
+   "year": "2023",
+   "authors": "Aleksander SA, Balhoff J, Carbon S, Cherry JM, Drabkin HJ, Ebert D, Feuermann M, Gaudet P, Harris NL, Hill DP, Lee R, Mi H, Moxon S, Mungall CJ, Muruganugan A, Mushayahama T, Sternberg PW, Thomas PD, Van Auken K, Ramsey J, Siegele DA, Chisholm RL, Fey P, Aspromonte MC, Nugnes MV, Quaglia F, Tosatto S, Giglio M, Nadendla S, Antonazzo G, Attrill H, Dos Santos G, Marygold S, Strelets V, Tabone CJ, Thurmond J, Zhou P, Ahmed SH, Asanitthong P, Luna Buitrago D, Erdol MN, Gage MC, Ali Kadhum M, Li KYC, Long M, Michalak A, Pesala A, Pritazahra A, Saverimuttu SCC, Su R, Thurlow KE, Lovering RC, Logie C, Oliferenko S, Blake J, Christie K, Corbani L, Dolan ME, Drabkin HJ, Hill DP, Ni L, Sitnikov D, Smith C, Cuzick A, Seager J, Cooper L, Elser J, Jaiswal P, Gupta P, Jaiswal P, Naithani S, Lera-Ramirez M, Rutherford K, Wood V, De Pons JL, Dwinell MR, Hayman GT, Kaldunski ML, Kwitek AE, Laulederkind SJF, Tutaj MA, Vedi M, Wang SJ, D'Eustachio P, Aimo L, Axelsen K, Bridge A, Hyka-Nouspikel N, Morgat A, Aleksander SA, Cherry JM, Engel SR, Karra K, Miyasato SR, Nash RS, Skrzypek MS, Weng S, Wong ED, Bakker E, Berardini TZ, Reiser L, Auchincloss A, Axelsen K, Argoud-Puy G, Blatter MC, Boutet E, Breuza L, Bridge A, Casals-Casas C, Coudert E, Estreicher A, Livia Famiglietti M, Feuermann M, Gos A, Gruaz-Gumowski N, Hulo C, Hyka-Nouspikel N, Jungo F, Le Mercier P, Lieberherr D, Masson P, Morgat A, Pedruzzi I, Pourcel L, Poux S, Rivoire C, Sundaram S, Bateman A, Bowler-Barnett E, Bye-A-Jee H, Denny P, Ignatchenko A, Ishtiaq R, Lock A, Lussi Y, Magrane M, Martin MJ, Orchard S, Raposo P, Speretta E, Tyagi N, Warner K, Zaru R, Diehl AD, Lee R, Chan J, Diamantakis S, Raciti D, Zarowiecki M, Fisher M, James-Zorn C, Ponferrada V, Zorn A, Ramachandran S, Ruzicka L, Westerfield M",
+   "used": [
+    "data"
    ]
   },
   {
@@ -1642,6 +1678,18 @@
    "authors": "Asano S, Park JE, Yu LR, Zhou M, Sakchaisri K, Park CJ, Kang YH, Thorner J, Veenstra TD, Lee KS",
    "used": [
     "literature"
+   ]
+  },
+  {
+   "pmid": "10802651",
+   "cite": "Ashburner et al. 2000 Nat Genet",
+   "title": "Gene ontology: tool for the unification of biology. The Gene Ontology Consortium",
+   "url": "https://doi.org/10.1038/75556",
+   "first": "Ashburner",
+   "year": "2000",
+   "authors": "Ashburner M, Ball CA, Blake JA, Botstein D, Butler H, Cherry JM, Davis AP, Dolinski K, Dwight SS, Eppig JT, Harris MA, Hill DP, Issel-Tarver L, Kasarskis A, Lewis S, Matese JC, Richardson JE, Ringwald M, Rubin GM, Sherlock G",
+   "used": [
+    "data"
    ]
   },
   {
@@ -5482,6 +5530,18 @@
    "authors": "Bylund GO, Majka J, Burgers PM",
    "used": [
     "literature"
+   ]
+  },
+  {
+   "pmid": "16169922",
+   "cite": "Byrne et al. 2005 Genome Res",
+   "title": "The Yeast Gene Order Browser: combining curated homology and syntenic context reveals gene fate in polyploid species",
+   "url": "https://doi.org/10.1101/gr.3672305",
+   "first": "Byrne",
+   "year": "2005",
+   "authors": "Byrne KP, Wolfe KH",
+   "used": [
+    "data"
    ]
   },
   {
@@ -11902,6 +11962,18 @@
    "authors": "Encinar Del Dedo J, Idrissi FZ, Fernandez-Golbano IM, Garcia P, Rebollo E, Krzyzanowski MK, Grötsch H, Geli MI",
    "used": [
     "literature"
+   ]
+  },
+  {
+   "pmid": "39530598",
+   "cite": "Engel et al. 2025 Genetics",
+   "title": "Saccharomyces Genome Database: advances in genome annotation, expanded biochemical pathways, and other key enhancements",
+   "url": "https://doi.org/10.1093/genetics/iyae185",
+   "first": "Engel",
+   "year": "2025",
+   "authors": "Engel SR, Aleksander S, Nash RS, Wong ED, Weng S, Miyasato SR, Sherlock G, Cherry JM",
+   "used": [
+    "data"
    ]
   },
   {
@@ -18406,6 +18478,18 @@
    "authors": "Heyken WT, Repenning A, Kumme J, Schüller HJ",
    "used": [
     "literature"
+   ]
+  },
+  {
+   "pmid": "17724061",
+   "cite": "Hibbs et al. 2007 Bioinformatics",
+   "title": "Exploring the functional landscape of gene expression: directed search of large microarray compendia",
+   "url": "https://doi.org/10.1093/bioinformatics/btm403",
+   "first": "Hibbs",
+   "year": "2007",
+   "authors": "Hibbs MA, Hess DC, Myers CL, Huttenhower C, Li K, Troyanskaya OG",
+   "used": [
+    "data"
    ]
   },
   {
@@ -31862,6 +31946,18 @@
    ]
   },
   {
+   "pmid": "34718729",
+   "cite": "Meldal et al. 2022 Nucleic Acids Res",
+   "title": "Complex Portal 2022: new curation frontiers",
+   "url": "https://doi.org/10.1093/nar/gkab991",
+   "first": "Meldal",
+   "year": "2022",
+   "authors": "Meldal BHM, Perfetto L, Combe C, Lubiana T, Ferreira Cavalcante JV, Bye-A-Jee H, Waagmeester A, Del-Toro N, Shrivastava A, Barrera E, Wong E, Mlecnik B, Bindea G, Panneerselvam K, Willighagen E, Rappsilber J, Porras P, Hermjakob H, Orchard S",
+   "used": [
+    "data"
+   ]
+  },
+  {
    "pmid": "29887313",
    "cite": "Melero et al. 2018 Curr Biol",
    "title": "Lysophospholipids Facilitate COPII Vesicle Formation",
@@ -36299,6 +36395,18 @@
    "authors": "Otero JM, Vongsangnak W, Asadollahi MA, Olivares-Hernandes R, Maury J, Farinelli L, Barlocher L, Osterås M, Schalk M, Clark A, Nielsen J",
    "used": [
     "expression"
+   ]
+  },
+  {
+   "pmid": "33070389",
+   "cite": "Oughtred et al. 2021 Protein Sci",
+   "title": "The BioGRID database: A comprehensive biomedical resource of curated protein, genetic, and chemical interactions",
+   "url": "https://doi.org/10.1002/pro.3978",
+   "first": "Oughtred",
+   "year": "2021",
+   "authors": "Oughtred R, Rust J, Chang C, Breitkreutz BJ, Stark C, Willems A, Boucher L, Leung G, Kolas N, Zhang F, Dolma S, Coulombe-Huntington J, Chatr-Aryamontri A, Dolinski K, Tyers M",
+   "used": [
+    "data"
    ]
   },
   {
@@ -45983,6 +46091,30 @@
    "authors": "Stanbrough M, Magasanik B",
    "used": [
     "literature"
+   ]
+  },
+  {
+   "pmid": "16381927",
+   "cite": "Stark et al. 2006 Nucleic Acids Res",
+   "title": "BioGRID: a general repository for interaction datasets",
+   "url": "https://doi.org/10.1093/nar/gkj109",
+   "first": "Stark",
+   "year": "2006",
+   "authors": "Stark C, Breitkreutz BJ, Reguly T, Boucher L, Breitkreutz A, Tyers M",
+   "used": [
+    "data"
+   ]
+  },
+  {
+   "pmid": "20428315",
+   "cite": "Stark et al. 2010 Database (Oxford)",
+   "title": "PhosphoGRID: a database of experimentally verified in vivo protein phosphorylation sites from the budding yeast Saccharomyces cerevisiae",
+   "url": "https://doi.org/10.1093/database/bap026",
+   "first": "Stark",
+   "year": "2010",
+   "authors": "Stark C, Su TC, Breitkreutz A, Lourenco P, Dahabieh M, Breitkreutz BJ, Tyers M, Sadowski I",
+   "used": [
+    "data"
    ]
   },
   {

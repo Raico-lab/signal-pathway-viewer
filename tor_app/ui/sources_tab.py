@@ -1,6 +1,7 @@
 """上部の「情報源」タブ: DB を作るのに使ったサイトと、参考にした論文を分けて並べる。
 
 サイト: data/sources.json の sites（名前・URL・根拠欄で見分ける語）と、それが根拠になっている関係の本数。
+同じところが出すもの（SGD と SGD SPELL、BioGRID と PhosphoGRID）は includes で 1 つにまとめ、cite にサイトが引用を求める論文を並べる。
 論文: data/papers.json（tools/fetch_paper_list.py が作る。1 本ずつ書誌と URL）と、その論文が根拠欄に出てくる関係の本数。
 10 本ずつのページに分け（スクロールなし）、題名で絞り込める。
 公開データとして使った論文（sources.json の papers）は、根拠欄で見分ける語で数える。本数は DB を開いたときに数える。
@@ -135,21 +136,31 @@ class SourcesTab(QWidget):
     def show_counts(self, site_counts: dict, paper_counts: dict) -> None:
         sites = _load("sources.json").get("sites", [])
 
+        papers = {p["pmid"]: p for p in self.papers}
+
         def site_count(s: dict) -> str:
-            """根拠の数。note のあるもの（Complex Portal の「複合体 633 件」）は数だけを取り出す。"""
-            if s.get("note"):
-                m = re.search(r"[\d,]+", s["note"])
-                return _number(m.group(0), 13) if m else html.escape(s["note"])
-            n = site_counts.get(s["name"])
+            """根拠の数 = 根拠欄に出てくる関係の本数 ＋ note の数（Complex Portal の「複合体 633 件」、SGD SPELL の測定の数）。"""
+            n = site_counts.get(s["name"]) or 0
+            m = re.search(r"[\d,]+", s.get("note", ""))
+            n += int(m.group(0).replace(",", "")) if m else 0
             return _number(f"{n:,}", 13) if n else ""
 
+        def link(url: str, text: str) -> str:
+            return f"<a href='{html.escape(url)}' style='color:#000;text-decoration:none'>{html.escape(text)}</a>"
+
         def site_cells(s: dict) -> str:
-            host = re.sub(r"^https?://(www\.)?|/$", "", s["url"])
+            hosts = "<br>".join(link(x["url"], re.sub(r"^https?://(www\.)?|/$", "", x["url"]))
+                               for x in [s] + s.get("includes", []))
             # データの利用条件（data/sources.json の license。詳しくは DATA_LICENSES.md）
             lic = f"<br><span style='color:#555;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
+            # サイトが引用を求める論文（papers.json に書誌がなければ PMID で）
+            cites = "".join(
+                "<br><span style='font-size:10px'>" + (link(papers[pmid]["url"], papers[pmid]["cite"]) if pmid in papers
+                                                       else link(f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/", f"PMID {pmid}"))
+                + "</span>" for pmid in s.get("cite", []))
             return (f"<td><a href='{s['url']}' style='color:#000;text-decoration:none;"
                     f"font-weight:bold;font-size:12px'>{html.escape(s['name'])}</a><br>"
-                    f"<span style='color:#000;font-size:10px'>{html.escape(host)}</span>{lic}</td>"
+                    f"<span style='font-size:10px'>{hosts}</span>{lic}{cites}</td>"
                     f"<td align='right' valign='middle'>{site_count(s)}</td><td width='24'></td>")
 
         # 横に SITE_COLUMNS 個ずつ並べる（上の枠に収まるように）
@@ -163,11 +174,11 @@ class SourcesTab(QWidget):
         self._show_page(self.page)
 
     def _fit_sites(self) -> None:
-        """サイトの枠の縦幅の上限を、中身の高さに合わせる（余白を作らない）。"""
+        """サイトの枠の縦幅を、中身の高さに合わせる（余白もスクロールも作らない）。"""
         doc = self.sites_view.document()
         doc.setTextWidth(self.sites_view.viewport().width())
         frame = self.sites_view.frameWidth() * 2
-        self.sites_view.setMaximumHeight(int(doc.size().height()) + frame + 2)
+        self.sites_view.setFixedHeight(int(doc.size().height()) + frame + 2)
 
     def showEvent(self, event):
         super().showEvent(event)

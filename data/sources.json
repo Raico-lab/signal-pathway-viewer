@@ -3,26 +3,41 @@
   {
    "name": "SGD",
    "url": "https://www.yeastgenome.org/",
+   "includes": [
+    {
+     "name": "SGD SPELL",
+     "url": "https://spell.yeastgenome.org/"
+    }
+   ],
    "match": [
     "SGD GO 注釈"
    ],
-   "license": "CC BY 4.0"
+   "note": "発現の測定 93 件",
+   "license": "CC BY 4.0（発現の元データは GEO）",
+   "cite": [
+    "39530598",
+    "17724061"
+   ]
   },
   {
    "name": "BioGRID",
    "url": "https://thebiogrid.org/",
-   "match": [
-    "BioGRID"
+   "includes": [
+    {
+     "name": "PhosphoGRID",
+     "url": "https://phosphogrid.org/"
+    }
    ],
-   "license": "MIT"
-  },
-  {
-   "name": "PhosphoGRID",
-   "url": "https://phosphogrid.org/",
    "match": [
+    "BioGRID",
     "PhosphoGRID"
    ],
-   "license": "MIT（BioGRID）"
+   "license": "MIT",
+   "cite": [
+    "33070389",
+    "16381927",
+    "20428315"
+   ]
   },
   {
    "name": "YEASTRACT+",
@@ -30,7 +45,10 @@
    "match": [
     "YEASTRACT"
    ],
-   "license": "利用条件あり"
+   "license": "利用条件あり",
+   "cite": [
+    "31586406"
+   ]
   },
   {
    "name": "GO-CAM",
@@ -38,7 +56,11 @@
    "match": [
     "GO-CAM"
    ],
-   "license": "CC BY 4.0（GO）"
+   "license": "CC BY 4.0（GO）",
+   "cite": [
+    "36866529",
+    "10802651"
+   ]
   },
   {
    "name": "UniProt",
@@ -46,35 +68,40 @@
    "match": [
     "UniProt"
    ],
-   "license": "CC BY 4.0"
+   "license": "CC BY 4.0",
+   "cite": [
+    "39552041"
+   ]
   },
   {
    "name": "Complex Portal",
    "url": "https://www.ebi.ac.uk/complexportal/",
    "match": [],
    "note": "複合体 633 件",
-   "license": "CC0"
+   "license": "CC0",
+   "cite": [
+    "34718729"
+   ]
   },
   {
    "name": "YGOB",
    "url": "http://ygob.ucd.ie/",
    "match": [],
    "note": "パラログ 545 組",
-   "license": "明示なし・引用を依頼"
+   "license": "明示なし・引用を依頼",
+   "cite": [
+    "16169922"
+   ]
   },
   {
    "name": "Alliance",
    "url": "https://www.alliancegenome.org/",
    "match": [],
    "note": "パラログ 569 組",
-   "license": "CC BY 4.0"
-  },
-  {
-   "name": "SGD SPELL",
-   "url": "https://spell.yeastgenome.org/",
-   "match": [],
-   "note": "発現の測定 93 件",
-   "license": "CC BY 4.0（元データは GEO）"
+   "license": "CC BY 4.0",
+   "cite": [
+    "38552170"
+   ]
   }
  ],
  "papers": [

@@ -3,7 +3,7 @@
 参考にした論文 = 文献で確認した関係（根拠欄の「文献で確認…」の部分）の PMID
 ＋ 文献調査の記録（sample_data/literature/verified*.csv）で使った論文（列 pmids・fill_pmid と、verified_note・note に引いた PMID。
   記録の誤りと判断した reject の行も含む。探して見つからなかった記録 docs/curation/searched_not_found.csv の論文は含めない）
-＋ data/sources.json の papers（公開データとして使った論文）
+＋ data/sources.json の papers（公開データとして使った論文）と、sites の cite（サイトが引用を求める論文）
 ＋ 条件ごとの発現・リン酸化の測定の論文（data/expression.db の measures。tools/build_expression.py が作る）。書誌（著者・年・雑誌・題名・DOI）は NCBI の
 E-utilities（esummary）から取る。DB を直したら・文献調査の回を終えたら、もう一度実行する。
 （以前の手作業の複合体（archive/data/complexes.csv）の論文は、今は並べない。複合体の根拠に使うときに戻す）
@@ -84,7 +84,9 @@ def fetch(pmids: list[str]) -> dict:
 
 def citation(s: dict) -> dict:
     authors = [a["name"] for a in s.get("authors", []) if a.get("authtype") == "Author"]
-    first = authors[0].split(" ")[0] if authors else ""
+    if not authors:   # 著者が団体だけの論文（"UniProt Consortium" など）は団体名で
+        authors = [a["name"] for a in s.get("authors", []) if a.get("authtype") == "CollectiveName"][:1]
+    first = (authors[0] if " " in authors[0] and not authors[0].split(" ")[-1].isupper() else authors[0].split(" ")[0]) if authors else ""
     who = f"{first} et al." if len(authors) > 1 else first
     year = (s.get("pubdate") or "")[:4]
     doi = next((a["value"] for a in s.get("articleids", []) if a.get("idtype") == "doi"), "")
@@ -97,6 +99,7 @@ def citation(s: dict) -> dict:
 def main() -> None:
     sources = json.loads((ROOT / "data" / "sources.json").read_text(encoding="utf-8"))
     data_papers = {p["pmid"] for p in sources.get("papers", [])}
+    data_papers |= {pmid for s in sources.get("sites", []) for pmid in s.get("cite", [])}
     lit = literature_pmids() | curation_pmids()
     expr = expression_pmids()
     pmids = sorted(lit | data_papers | expr, key=int)
