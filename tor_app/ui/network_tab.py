@@ -871,8 +871,7 @@ class NetworkTab(QWidget):
         genes = QVBoxLayout(self.cond_genes_part)
         genes.setContentsMargins(0, 0, 0, 0)
         self.cond_gene_tree = self._condition_tree()
-        self.cond_gene_tree.itemClicked.connect(self._on_condition_clicked)
-        self.cond_gene_tree.itemSelectionChanged.connect(lambda: QTimer.singleShot(0, self._check_condition_selection))
+        self.cond_gene_tree.itemChanged.connect(self._on_condition_gene_checked)
         genes.addWidget(self.cond_gene_tree)
         kinds = QHBoxLayout()
         kinds.addWidget(QLabel("データ"))
@@ -977,7 +976,7 @@ class NetworkTab(QWidget):
         for c in conditions.load():
             if c.key in keys:
                 groups.setdefault(c.group, []).append(c)
-        self.cond_gene_tree.blockSignals(True)
+        self._cond_syncing = True
         self.cond_gene_tree.clear()
         for group, items in groups.items():
             head = self._group_item(self.cond_gene_tree, group, len(items), checkable=False)
@@ -985,7 +984,8 @@ class NetworkTab(QWidget):
             for c in items:
                 item = QTreeWidgetItem([c.label])
                 item.setData(0, Qt.ItemDataRole.UserRole, c.key)
-                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(0, Qt.CheckState.Unchecked)
                 ok = kind in have.get(c.key, set())
                 ok_any |= ok
                 item.setForeground(0, QColor("#212121" if ok else "#9e9e9e"))
@@ -993,19 +993,21 @@ class NetworkTab(QWidget):
                                 + " の測定があります")
                 head.addChild(item)
             head.setForeground(0, QColor("#212121" if ok_any else "#9e9e9e"))
-        self.cond_gene_tree.blockSignals(False)
+        self._cond_syncing = False
         self._apply_condition_search()
         self._sync_condition_genes()
 
-    def _on_condition_clicked(self, item, _column: int = 0) -> None:
-        """条件を押した: その条件の測定で地図を色分けする（選んでいる種類の測定がなければ、ある種類に切り替える）。
-        色分けしている条件をもう一度押すと、選択を外して役割の色に戻す。群を押したときは開閉する。"""
+    def _on_condition_gene_checked(self, item, _column: int = 0) -> None:
+        """「遺伝子」の条件のチェックを切り替えた。地図の色は 1 つの条件でしか塗れないので、チェックした条件の測定で色分けし、
+        ほかのチェックは外す（選んでいる種類の測定がなければ、ある種類に切り替える）。チェックをすべて外すと役割の色に戻す。"""
+        if self._cond_syncing:
+            return
         key = item.data(0, Qt.ItemDataRole.UserRole)
         if not key:
-            item.setExpanded(not item.isExpanded())
             return
-        if self.data_kind() is not None and key == self.data_condition():
-            self.cond_gene_tree.clearSelection()
+        if item.checkState(0) != Qt.CheckState.Checked:
+            if self.data_kind() is not None and key == self.data_condition():
+                self._end_tab_color()
             return
         have = expression.condition_kinds().get(key, set())
         kind = self._cond_kind()
@@ -1015,41 +1017,29 @@ class NetworkTab(QWidget):
                 b.blockSignals(True)
                 b.setChecked(k == kind)
                 b.blockSignals(False)
-            self._refill_condition_list()
         self.data_cond_combo.blockSignals(True)
         self.data_cond_combo.setCurrentIndex(max(0, self.data_cond_combo.findData(key)))
         self.data_cond_combo.blockSignals(False)
         self._save_view()
-        self._set_color(kind)
+        QTimer.singleShot(0, lambda: self._set_color(kind))   # チェックの知らせの中では一覧を作り直さない
 
     def _on_condition_kind(self, kind: str) -> None:
         self._refill_condition_list()
         if self.data_kind() is not None and kind != self.data_kind():
             self._set_color(kind)   # 色分け中なら地図も変える
 
-    def _check_condition_selection(self) -> None:
-        """条件の選択が外れたら（一覧で条件が 1 つも選ばれていない）、役割の色に戻す。
-        別の条件を押している途中（押し下げた時点で選択が移る）は戻さない（押し終えたときにその条件の色にする）。"""
-        if getattr(self, "cond_gene_tree", None) is None or self.data_kind() is None:
-            return
-        if self.cond_mode.currentData() == "genes" and any(
-                it.data(0, Qt.ItemDataRole.UserRole) for it in self.cond_gene_tree.selectedItems()):
-            return
-        self._end_tab_color()
-
     def _sync_condition_genes(self) -> None:
         """「遺伝子」の表示を、今の色分けにそろえる（色分けしている条件を選び、下の欄に今の地図の遺伝子と値）。"""
         if getattr(self, "cond_gene_tree", None) is None:
             return
         kind, cond = self.data_kind(), self.data_condition()
-        self.cond_gene_tree.blockSignals(True)
-        self.cond_gene_tree.clearSelection()
+        self._cond_syncing = True
         for item in self._cond_gene_items():
-            if kind is not None and item.data(0, Qt.ItemDataRole.UserRole) == cond:
-                item.setSelected(True)
-                self.cond_gene_tree.setCurrentItem(item)
+            on = kind is not None and item.data(0, Qt.ItemDataRole.UserRole) == cond
+            item.setCheckState(0, Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
+            if on:
                 item.parent().setExpanded(True)
-        self.cond_gene_tree.blockSignals(False)
+        self._cond_syncing = False
         if kind is not None:
             for k, b in self.cond_kind_buttons.items():
                 b.blockSignals(True)
