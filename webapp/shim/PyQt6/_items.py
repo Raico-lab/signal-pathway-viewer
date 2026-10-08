@@ -565,6 +565,13 @@ class QTreeWidgetItem:
         if role == ROLE.CheckStateRole:
             self.setCheckState(col, value)
             return
+        if role == ROLE.ForegroundRole:   # None でふだんの色に戻す
+            if value is None:
+                self._fg.pop(col, None)
+            else:
+                self._fg[col] = value.color() if isinstance(value, QBrush) else QColor(value)
+            self._changed(col)
+            return
         self._data[(col, int(role))] = value
         self._changed(col)
 
@@ -1105,7 +1112,8 @@ class QTreeWidget(QAbstractItemView):
                 box.className = "qtree-check"
                 fg = it._fg.get(0)
                 if fg is not None and fg.name().lower() == "#9e9e9e":
-                    box.style.opacity = "0.4"   # 灰色の項目（地図に関係しないもの）はチェックも薄く
+                    box.style.filter = "grayscale(1)"   # 灰色の項目（地図に関係しないもの）はチェックも灰色に薄く（凡例と同じ）
+                    box.style.opacity = "0.4"
                 row.appendChild(box)
             for col in range(max(1, self._columns)):
                 cell = _dom.el("span", "qtree-text", it.text(col))

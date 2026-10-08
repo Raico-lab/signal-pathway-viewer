@@ -933,6 +933,15 @@ class NetworkTab(QWidget):
             if fg is not None and fg.color().name().lower() == "#9e9e9e":
                 option.state &= ~QStyle.StateFlag.State_Enabled
 
+    @staticmethod
+    def _set_gray(item: QTreeWidgetItem, gray: bool) -> None:
+        """条件の一覧の項目を灰色（地図に関係しない。チェックも薄く描く）か、ふだんの色にする（ダークモードでも読めるように、
+        ふだんの色は決め打ちしない）。"""
+        if gray:
+            item.setForeground(0, QColor("#9e9e9e"))
+        else:
+            item.setData(0, Qt.ItemDataRole.ForegroundRole, None)
+
     def _condition_tree(self, start_open: bool) -> QTreeWidget:
         """条件の一覧（群で開閉。経路・遺伝子で同じ形）。start_open なら群は最初から開いておく。開閉した群を覚える
         （tree.toggled: start_open なら閉じた群、そうでなければ開いた群）。"""
@@ -1033,11 +1042,11 @@ class NetworkTab(QWidget):
                 item.setCheckState(0, Qt.CheckState.Unchecked if c.key in self.gene_conditions_off else Qt.CheckState.Checked)
                 ok = kind in have.get(c.key, set())
                 ok_any |= ok
-                item.setForeground(0, QColor("#212121" if ok else "#9e9e9e"))
+                self._set_gray(item, not ok)
                 item.setToolTip(0, "、".join(expression.SHORT[k] for k in expression.SHORT if k in have.get(c.key, set()))
                                 + " の測定があります")
                 head.addChild(item)
-            head.setForeground(0, QColor("#212121" if ok_any else "#9e9e9e"))
+            self._set_gray(head, not ok_any)
         self._cond_syncing = False
         self._apply_condition_search()
         self._update_condition_genes()
@@ -1193,14 +1202,13 @@ class NetworkTab(QWidget):
         for it in self.model.interactions.values():
             if self.model._edge_shown(it, pane.sub, False):
                 present.update(conditions.split(it.conditions) or [conditions.NONE_KEY])
-        black, gray = QColor("#212121"), QColor("#9e9e9e")
         self._cond_syncing = True
         for i in range(self.cond_tree.topLevelItemCount()):
             group = self.cond_tree.topLevelItem(i)
             keys = [group.child(j).data(0, Qt.ItemDataRole.UserRole) for j in range(group.childCount())]
             for j in range(group.childCount()):
-                group.child(j).setForeground(0, black if keys[j] in present else gray)
-            group.setForeground(0, black if present & set(keys) else gray)
+                self._set_gray(group.child(j), keys[j] not in present)
+            self._set_gray(group, not present & set(keys))
         self._cond_syncing = False
         self._update_condition_edges()
 
