@@ -138,7 +138,11 @@ class NetworkTab(QWidget):
         self.layout_combo.setCurrentIndex(max(0, self.layout_combo.findData(layout_name)))
         self.layout_combo.blockSignals(False)
         self.color_combo.blockSignals(True)
-        self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
+        if color_mode in expression.DELETION_KINDS and expression.has_deletions():
+            self.del_color = color_mode   # 前回は破壊株で色分けしていた
+            self.color_combo.setCurrentIndex(-1)
+        else:
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
         self.color_combo.blockSignals(False)
         self.edge_color_combo.blockSignals(True)
         self.edge_color_combo.setCurrentIndex(max(0, self.edge_color_combo.findData(edge_color)))
@@ -172,12 +176,11 @@ class NetworkTab(QWidget):
                 self.color_combo.addItem(label, key)
             tip += ("\n発現・リン酸化・タンパク質量: 右の「条件」で選んだ条件での、対照との log2 比。"
                     "赤＝増える、青＝減る、灰＝データなし")
-        if expression.has_deletions():
-            for key, label in expression.DELETION_KINDS.items():
-                self.color_combo.addItem(label, key)
-            tip += ("\n破壊株の mRNA・リン酸化: 左の「破壊株」タブで選んだ株での、野生型との log2 比（実測）。"
-                    "壊した遺伝子は黒")
         self.color_combo.setToolTip(tip)
+        # 破壊株での色分け（del_mrna / del_phospho）は選択肢に出さず、左の「破壊株」タブで株を押したときだけにする。
+        # その間は選択肢を空にし、選択肢からどれかを選ぶと破壊株の色分けをやめる
+        self.del_color: str | None = None
+        self.color_combo.currentIndexChanged.connect(self._on_color_choice)   # ほかの受け口より先に
         self.color_combo.currentIndexChanged.connect(lambda: self._save_view())
         self.color_combo.currentIndexChanged.connect(
             lambda: self._all_js(f"app.setColorMode({json.dumps(self.color_mode())})"))
@@ -254,7 +257,7 @@ class NetworkTab(QWidget):
         if i < 0:
             return
         self.del_strain_combo.setCurrentIndex(i)
-        self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+        self._color_by_deletion(kind)
 
     def data_js(self) -> str:
         """地図の遺伝子に、選んだ条件・種類の値を渡す JavaScript（色分けが発現などでなければ空の表）。
@@ -561,7 +564,7 @@ class NetworkTab(QWidget):
         outer.addWidget(self.del_summary)
         self.del_changes = QListWidget()
         self.del_changes.setMinimumHeight(160)
-        self.del_changes.setToolTip("選んだ破壊株で変わった遺伝子（名前の順）。押すと右側に説明を出します")
+        self.del_changes.setToolTip("選んだ破壊株で変わった、今の地図の遺伝子（名前の順）。押すと右側に説明を出します")
         self.del_changes.itemClicked.connect(self._on_deletion_change_clicked)
         outer.addWidget(self.del_changes, 1)
         outer.addWidget(self.help_button("deletion"))
@@ -589,6 +592,7 @@ class NetworkTab(QWidget):
             self._refill_deletion_list()
         else:
             self._update_deletion_presence()
+            self._sync_deletion_panel()   # 下の欄（その株で変わった、今の地図の遺伝子）も作り直す
 
     def _map_orfs(self) -> set[str]:
         """操作中の表示枠の地図にある遺伝子の ORF。"""
@@ -676,7 +680,7 @@ class NetworkTab(QWidget):
         i = self.del_strain_combo.findData(orf)
         if i >= 0:
             self.del_strain_combo.setCurrentIndex(i)
-        self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+        self._color_by_deletion(kind)
         self._sync_deletion_panel()
 
     def _on_deletion_kind(self, kind: str) -> None:
@@ -685,7 +689,7 @@ class NetworkTab(QWidget):
         else:
             self._update_deletion_presence()
         if self.deletion_kind() and self.color_mode() != kind:
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))   # 色分け中なら地図も変える
+            self._color_by_deletion(kind)   # 色分け中なら地図も変える
         else:
             self._sync_deletion_panel()
         self._save_view()
@@ -730,9 +734,11 @@ class NetworkTab(QWidget):
         up = sum(1 for x in pts if x.value > 0)
         strong = sum(1 for x in pts if abs(x.value) >= self.STRONG_LOG2)
         unit = "部位" if base == "phospho" else "遺伝子"
+        shown = [x for x in pts if x.gene in self._map_orfs()]   # 一覧に出すのは今の地図の遺伝子だけ
         self.del_summary.setText(f"<b>{html.escape(name)} 破壊株</b>（{html.escape(info[base]['source'])}）<br>"
-                                 f"上がった{unit} {up}・下がった{unit} {len(pts) - up}<br>うち 1.7 倍以上 {strong}")
-        for x in sorted(pts, key=lambda x: (x.gene_name.upper(), x.site or "")):   # 省略せずに全部、名前の順
+                                 f"上がった{unit} {up}・下がった{unit} {len(pts) - up}<br>うち 1.7 倍以上 {strong}"
+                                 f"・今の地図 {len(shown)}")
+        for x in sorted(shown, key=lambda x: (x.gene_name.upper(), x.site or "")):   # 名前の順
             text = f"{x.gene_name}{(' ' + x.site) if x.site else ''}   {x.value:+.2f}"
             item = QListWidgetItem(text)
             item.setData(Qt.ItemDataRole.UserRole, ("gene", x.gene))
@@ -1466,7 +1472,25 @@ class NetworkTab(QWidget):
         return False
 
     def color_mode(self) -> str:
-        return self.color_combo.currentData()
+        return self.del_color or self.color_combo.currentData() or "role"
+
+    def _on_color_choice(self, index: int) -> None:
+        """色の選択肢からどれかを選んだ: 破壊株での色分けをやめる。"""
+        if index >= 0:
+            self.del_color = None
+
+    def _color_by_deletion(self, kind: str) -> None:
+        """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。色の選択肢は空にする。"""
+        if self.del_color == kind:
+            self._push_data_values()
+            return
+        self.del_color = kind
+        self.color_combo.blockSignals(True)
+        self.color_combo.setCurrentIndex(-1)
+        self.color_combo.blockSignals(False)
+        self._save_view()
+        self._all_js(f"app.setColorMode({json.dumps(kind)})")
+        self._push_data_values()
 
     def edge_color_mode(self) -> str:
         return self.edge_color_combo.currentData()
@@ -1519,7 +1543,7 @@ class NetworkTab(QWidget):
 
     def _save_view(self) -> None:
         data = {"panes": [p.state() for p in self.panes], "layout": self.layout_combo.currentData(),
-                "color_mode": self.color_combo.currentData(), "hidden": self.hidden_filters(),
+                "color_mode": self.color_mode(), "hidden": self.hidden_filters(),
                 "conditions_off": sorted(self.conditions_off), "conditions_top": self.cond_top.isChecked(),
                 "edge_color": self.edge_color_combo.currentData(), "display": self.display_options,
                 "data_condition": self.data_cond_combo.currentData(),
