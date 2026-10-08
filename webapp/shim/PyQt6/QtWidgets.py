@@ -20,6 +20,15 @@ class QToolBar(QWidget):
     pass
 
 
+class QStyledItemDelegate:
+    """項目の描き方（ブラウザ版では使わない。灰色の項目のチェックを薄くするのは一覧の側で行う）。"""
+    def __init__(self, parent=None):
+        self._parent = parent
+
+    def initStyleOption(self, *_a):
+        pass
+
+
 class QStyleFactory:
     @staticmethod
     def create(*_a):

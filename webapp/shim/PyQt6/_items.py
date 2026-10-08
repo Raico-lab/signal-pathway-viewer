@@ -15,6 +15,9 @@ ROLE = Qt.ItemDataRole
 class QAbstractItemView(QAbstractScrollArea):
     _accepts_mouse = True
 
+    def setItemDelegate(self, *_a):
+        pass
+
     class SelectionMode(enum.IntEnum):
         NoSelection = 0
         SingleSelection = 1
@@ -1100,6 +1103,9 @@ class QTreeWidget(QAbstractItemView):
                 box.checked = state == Qt.CheckState.Checked
                 box.indeterminate = state == Qt.CheckState.PartiallyChecked
                 box.className = "qtree-check"
+                fg = it._fg.get(0)
+                if fg is not None and fg.name().lower() == "#9e9e9e":
+                    box.style.opacity = "0.4"   # 灰色の項目（地図に関係しないもの）はチェックも薄く
                 row.appendChild(box)
             for col in range(max(1, self._columns)):
                 cell = _dom.el("span", "qtree-text", it.text(col))

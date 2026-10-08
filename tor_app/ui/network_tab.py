@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from PyQt6.QtCore import QObject, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QColor, QDesktopServices, QFont, QFontMetrics, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QSizePolicy, QButtonGroup, QCheckBox, QComboBox, QFrame, QGroupBox, QToolButton, QHBoxLayout, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QPushButton, QRadioButton, QScrollArea, QSpinBox, QSplitter, QTabWidget, QTextBrowser,
-                             QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+                             QListWidget, QListWidgetItem, QPushButton, QRadioButton, QScrollArea, QSpinBox, QSplitter, QStyle,
+                             QStyledItemDelegate, QTabWidget, QTextBrowser, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
 
 from .. import complex_groups, conditions, confidence, expression, relation_paths
 from ..db import Database
@@ -904,10 +904,19 @@ class NetworkTab(QWidget):
         self._refill_condition_list()
         return page
 
+    class _DimGrayDelegate(QStyledItemDelegate):
+        """灰色の項目（地図に関係しない条件）は、チェックも薄く描く（押せるまま。描き方だけ使えない見た目にする）。"""
+        def initStyleOption(self, option, index):
+            super().initStyleOption(option, index)
+            fg = index.data(Qt.ItemDataRole.ForegroundRole)
+            if fg is not None and fg.color().name().lower() == "#9e9e9e":
+                option.state &= ~QStyle.StateFlag.State_Enabled
+
     def _condition_tree(self) -> QTreeWidget:
         """条件の一覧（群で開閉。経路・遺伝子で同じ形）。開いた群を覚える。"""
         tree = QTreeWidget()
         tree.setHeaderHidden(True)
+        tree.setItemDelegate(self._DimGrayDelegate(tree))
         tree.setMinimumHeight(160)
         tree.setMaximumHeight(260)
         tree.itemExpanded.connect(lambda it: self._cond_open.add(it.text(0).split("（")[0]))
