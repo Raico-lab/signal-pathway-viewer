@@ -140,6 +140,8 @@ class NetworkTab(QWidget):
         self.color_combo.blockSignals(True)
         self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
         self.color_combo.blockSignals(False)
+        if self.data_kind() is not None:   # 前回は条件の測定で色分けしていた: 条件タブの遺伝子の側を開いておく
+            self.cond_mode.setCurrentIndex(max(0, self.cond_mode.findData("genes")))
         self.edge_color_combo.blockSignals(True)
         self.edge_color_combo.setCurrentIndex(max(0, self.edge_color_combo.findData(edge_color)))
         self.edge_color_combo.blockSignals(False)
@@ -164,7 +166,6 @@ class NetworkTab(QWidget):
             lambda: self._all_js(f"app.runLayout({json.dumps(self.layout_name())})"))
         self.color_combo = QComboBox()
         self.color_combo.addItem("役割", "role")
-        self.color_combo.addItem("階層", "level")
         tip = ("遺伝子の色\n役割: SGD の機能説明から推定したキナーゼ・転写制御因子などの分類\n"
                "階層: ネットワーク全体で上流の起点から何段目か。青＝上流側 → 赤紫＝下流側")
         if expression.available():
@@ -178,7 +179,6 @@ class NetworkTab(QWidget):
             tip += ("\n破壊株の mRNA・リン酸化: 左の「破壊株」タブで選んだ株での、野生型との log2 比（実測）。"
                     "壊した遺伝子は黒。タブで株の選択が外れると、前の色に戻ります")
         self.color_combo.setToolTip(tip)
-        self._color_before_del = "role"   # 破壊株で色分けする前の色（株の選択が外れたら戻す）
         self.color_combo.currentIndexChanged.connect(lambda: self._save_view())
         self.color_combo.currentIndexChanged.connect(
             lambda: self._all_js(f"app.setColorMode({json.dumps(self.color_mode())})"))
@@ -223,10 +223,8 @@ class NetworkTab(QWidget):
     def view_choices(self) -> list[tuple[str, QComboBox]]:
         """表示枠の検索窓の下に出す、全表示枠に共通の選択肢: (見出し, 値を持つ選択肢)。"""
         # 見出しは短くする（表示枠を 2 列に並べても枠が広がりすぎないように。説明は選択肢のツールチップ）
-        choices = [("配置", self.layout_combo), ("色", self.color_combo)]
-        if self.data_cond_combo.count():
-            choices.append(("条件", self.data_cond_combo))
-        return choices + [("線", self.edge_color_combo)]
+        # 遺伝子の色は左の「条件」（遺伝子）・「破壊株」タブで選ぶ（選択をやめると役割に戻る）ので、ここには出さない
+        return [("配置", self.layout_combo), ("線", self.edge_color_combo)]
 
     def data_kind(self) -> str | None:
         """発現・リン酸化・タンパク質量で色分けしているなら、その種類（mrna / phospho / protein）。"""
@@ -295,6 +293,7 @@ class NetworkTab(QWidget):
         self._all_js(self.data_js())
         if getattr(self, "del_list", None) is not None:
             self._sync_deletion_panel()
+        self._sync_condition_genes()
         if self.selected and self.selected[0] == "node":
             self._refresh_detail_text()
 
@@ -708,6 +707,11 @@ class NetworkTab(QWidget):
         for w in self.del_kind_buttons.values():
             w.blockSignals(False)
         mark = self.del_gene if self.del_search_mode.currentData() == "changed" else orf
+        if mark == orf and dkind is None:   # 破壊株で色分けしていない（条件で色分けしたなど）: 株の選択を外す
+            self.del_list.blockSignals(True)
+            self.del_list.clearSelection()
+            self.del_list.blockSignals(False)
+            mark = None
         for i in range(self.del_list.count()):
             item = self.del_list.item(i)
             if item.data(Qt.ItemDataRole.UserRole) == mark:
@@ -833,7 +837,193 @@ class NetworkTab(QWidget):
         scroll.setWidget(panel)
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        return scroll
+        # 見るもの: 関係（線。上のチェック）／遺伝子（測定。条件を 1 つ選んで、地図の遺伝子を発現などで色分けする）
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.cond_mode = QComboBox()
+        self.cond_mode.addItem("関係（線）", "edges")
+        if expression.available():
+            self.cond_mode.addItem("遺伝子（測定）", "genes")
+        self.cond_mode.setToolTip("関係（線）: チェックした条件で報告された関係を目立たせます\n"
+                                  "遺伝子（測定）: 条件を選ぶと、その条件での発現・リン酸化・タンパク質量で地図の遺伝子を色分けします")
+        mode_row = QHBoxLayout()
+        mode_row.setContentsMargins(9, 9, 9, 0)
+        mode_row.addWidget(self.cond_mode)
+        mode_row.addStretch(1)
+        layout.addLayout(mode_row)
+        self.cond_edges_part = scroll
+        layout.addWidget(scroll, 1)
+        self.cond_genes_part = self._build_condition_genes()
+        self.cond_genes_part.setVisible(False)
+        layout.addWidget(self.cond_genes_part, 1)
+        self.cond_mode.currentIndexChanged.connect(lambda _i: self._on_condition_mode())
+        return page
+
+    # ---- 条件タブの「遺伝子（測定）」 ----
+    def _build_condition_genes(self) -> QWidget:
+        """条件タブの「遺伝子（測定）」: 測定のある条件を並べ（名前で絞り込める）、押すとその条件の測定（データの種類を選ぶ）で
+        地図の遺伝子を色分けする。下の欄に、今の地図の遺伝子と値を名前の順に出す。条件の選択をやめると役割の色に戻る。"""
+        panel = QWidget()
+        outer = QVBoxLayout(panel)
+        self.cond_gene_search = QLineEdit()
+        self.cond_gene_search.setPlaceholderText("名前で絞り込む")
+        self.cond_gene_search.setClearButtonEnabled(True)
+        self.cond_gene_search.textChanged.connect(lambda _t: self._refill_condition_list())
+        outer.addWidget(self.cond_gene_search)
+        self.cond_list = QListWidget()
+        self.cond_list.setMinimumHeight(120)
+        self.cond_list.setMaximumHeight(200)
+        self.cond_list.itemClicked.connect(self._on_condition_clicked)
+        self.cond_list.itemSelectionChanged.connect(lambda: QTimer.singleShot(0, self._check_condition_selection))
+        outer.addWidget(self.cond_list)
+        kinds = QHBoxLayout()
+        kinds.addWidget(QLabel("データ"))
+        self.cond_kind_group = QButtonGroup(self)
+        self.cond_kind_buttons: dict[str, QRadioButton] = {}
+        for key, text in expression.SHORT.items():
+            b = QRadioButton(text)
+            self.cond_kind_group.addButton(b)
+            self.cond_kind_buttons[key] = b
+            kinds.addWidget(b)
+            b.toggled.connect(lambda on, k=key: on and self._on_condition_kind(k))
+        kinds.addStretch(1)
+        start = self.color_mode() if self.color_mode() in self.cond_kind_buttons else "mrna"
+        self.cond_kind_buttons[start].blockSignals(True)
+        self.cond_kind_buttons[start].setChecked(True)
+        self.cond_kind_buttons[start].blockSignals(False)
+        outer.addLayout(kinds)
+        self.cond_summary = QLabel()
+        self.cond_summary.setWordWrap(True)
+        self.cond_summary.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        outer.addWidget(self.cond_summary)
+        self.cond_values = QListWidget()
+        self.cond_values.setMinimumHeight(160)
+        self.cond_values.setToolTip("選んだ条件での、今の地図の遺伝子の値（名前の順）。押すと右側に説明を出します")
+        self.cond_values.itemClicked.connect(self._on_condition_value_clicked)
+        outer.addWidget(self.cond_values, 1)
+        outer.addWidget(self.help_button("conditions"))
+        self._refill_condition_list()
+        return panel
+
+    def _cond_kind(self) -> str:
+        """条件タブ（遺伝子）で選んでいるデータの種類（mrna / phospho / protein）。"""
+        return next((k for k, b in self.cond_kind_buttons.items() if b.isChecked()), "mrna")
+
+    def _on_condition_mode(self) -> None:
+        genes = self.cond_mode.currentData() == "genes"
+        self.cond_edges_part.setVisible(not genes)
+        self.cond_genes_part.setVisible(genes)
+        if not genes and self.data_kind() is not None:
+            self._end_tab_color()   # 遺伝子の条件の選択をやめた: 役割の色に戻す
+        self._sync_condition_genes()
+
+    def _refill_condition_list(self) -> None:
+        """「遺伝子（測定）」の条件の一覧を作り直す（選んでいるデータの種類の測定がない条件は灰色）。"""
+        if getattr(self, "cond_list", None) is None:
+            return
+        labels = conditions.labels()
+        have = expression.condition_kinds()
+        words = self.cond_gene_search.text().strip()
+        kind = self._cond_kind()
+        self.cond_list.blockSignals(True)
+        self.cond_list.clear()
+        for key in expression.condition_keys():
+            label = labels.get(key, key)
+            if words and words.lower() not in label.lower():
+                continue
+            item = QListWidgetItem(label)
+            item.setData(Qt.ItemDataRole.UserRole, key)
+            ok = kind in have.get(key, set())
+            item.setForeground(QColor("#212121" if ok else "#9e9e9e"))
+            item.setToolTip("、".join(expression.SHORT[k] for k in expression.SHORT if k in have.get(key, set())) + " の測定があります")
+            self.cond_list.addItem(item)
+        self.cond_list.blockSignals(False)
+        self._sync_condition_genes()
+
+    def _on_condition_clicked(self, item) -> None:
+        """条件を押した: その条件の測定で地図を色分けする（選んでいる種類の測定がなければ、ある種類に切り替える）。
+        色分けしている条件をもう一度押すと、選択を外して役割の色に戻す。"""
+        key = item.data(Qt.ItemDataRole.UserRole)
+        if not key:
+            return
+        if self.data_kind() is not None and key == self.data_condition():
+            self.cond_list.clearSelection()
+            return
+        have = expression.condition_kinds().get(key, set())
+        kind = self._cond_kind()
+        if kind not in have and have:
+            kind = next(k for k in expression.SHORT if k in have)
+            for k, b in self.cond_kind_buttons.items():
+                b.blockSignals(True)
+                b.setChecked(k == kind)
+                b.blockSignals(False)
+            self._refill_condition_list()
+        self.data_cond_combo.blockSignals(True)
+        self.data_cond_combo.setCurrentIndex(max(0, self.data_cond_combo.findData(key)))
+        self.data_cond_combo.blockSignals(False)
+        self._save_view()
+        if self.color_mode() == kind:
+            self._push_data_values()   # 条件だけが変わった
+        else:
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+
+    def _on_condition_kind(self, kind: str) -> None:
+        self._refill_condition_list()
+        if self.data_kind() is not None and kind != self.data_kind():
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))   # 色分け中なら地図も変える
+
+    def _check_condition_selection(self) -> None:
+        """条件の選択が外れたら（一覧に、色分けしている条件が選ばれていない）、役割の色に戻す。"""
+        if getattr(self, "cond_list", None) is None or self.data_kind() is None:
+            return
+        if self.cond_mode.currentData() == "genes" and self.data_condition() in {
+                it.data(Qt.ItemDataRole.UserRole) for it in self.cond_list.selectedItems()}:
+            return
+        self._end_tab_color()
+
+    def _sync_condition_genes(self) -> None:
+        """「遺伝子（測定）」の表示を、今の色分けにそろえる（色分けしている条件を選び、下の欄に今の地図の遺伝子と値）。"""
+        if getattr(self, "cond_list", None) is None:
+            return
+        kind, cond = self.data_kind(), self.data_condition()
+        self.cond_list.blockSignals(True)
+        self.cond_list.clearSelection()
+        for i in range(self.cond_list.count()):
+            item = self.cond_list.item(i)
+            if kind is not None and item.data(Qt.ItemDataRole.UserRole) == cond:
+                self.cond_list.setCurrentItem(item)
+        self.cond_list.blockSignals(False)
+        if kind is not None:
+            for k, b in self.cond_kind_buttons.items():
+                b.blockSignals(True)
+                b.setChecked(k == kind)
+                b.blockSignals(False)
+        have = expression.condition_kinds().get(cond, set()) if kind is not None else set(expression.SHORT)
+        for k, b in self.cond_kind_buttons.items():
+            b.setEnabled(k in have)
+        self.cond_values.clear()
+        if kind is None or not cond or self.model is None:
+            self.cond_summary.setText("")
+            return
+        vals = expression.values(kind, cond)
+        names = expression.gene_names()
+        rows = sorted(((names.get(orf, orf), orf, v, d) for orf, (v, d) in vals.items() if orf in self._map_orfs()),
+                      key=lambda r: r[0].upper())
+        up = sum(1 for r in rows if r[2] > 0)
+        label = conditions.labels().get(cond, cond)
+        self.cond_summary.setText(f"<b>{html.escape(label)} の{expression.KINDS[kind]}</b><br>"
+                                  f"今の地図 {len(rows)}（上がった {up}・下がった {len(rows) - up}）")
+        for name, orf, v, d in rows:
+            item = QListWidgetItem(f"{name}{(' ' + d) if d else ''}   {v:+.2f}")
+            item.setData(Qt.ItemDataRole.UserRole, orf)
+            item.setForeground(QColor("#c62828" if v > 0 else "#1565c0" if v < 0 else "#555"))
+            self.cond_values.addItem(item)
+
+    def _on_condition_value_clicked(self, item) -> None:
+        pid = self._orf_pid(item.data(Qt.ItemDataRole.UserRole) or "")
+        if pid is not None:
+            self.show_node(pid, self.active_pane)
 
     def _rebuild_condition_panel(self) -> None:
         """条件タブの中身を、今の DB の関係に付いている条件で作り直す（DB を読み直したとき）。"""
@@ -1481,22 +1671,20 @@ class NetworkTab(QWidget):
         return self.color_combo.currentData()
 
     def _color_by_deletion(self, kind: str) -> None:
-        """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。その前の色を覚えておく。"""
-        if self.deletion_kind() is None:
-            self._color_before_del = self.color_mode()
+        """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。"""
         if self.color_mode() == kind:
             self._push_data_values()   # 株だけが変わった
         else:
             self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
 
-    def _end_deletion_color(self) -> None:
-        """破壊株での色分けをやめ、その前の色に戻す。"""
-        if self.deletion_kind() is not None:
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(self._color_before_del or "role")))
+    def _end_tab_color(self) -> None:
+        """左のタブ（条件・破壊株）での色分けをやめ、役割の色に戻す。"""
+        if self.color_mode() != "role":
+            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData("role")))
 
     def _check_deletion_selection(self) -> None:
         """破壊株タブで株の選択が外れたら（上の一覧・「変化した遺伝子」の下の欄のどちらにも、色分けしている株が
-        選ばれていない）、色を破壊株で色分けする前に戻す。"""
+        選ばれていない）、役割の色に戻す。"""
         if getattr(self, "del_list", None) is None or self.deletion_kind() is None:
             return
         strain = self.deletion_strain()
@@ -1506,7 +1694,7 @@ class NetworkTab(QWidget):
                 return
         elif strain in {it.data(Qt.ItemDataRole.UserRole) for it in self.del_list.selectedItems()}:
             return
-        self._end_deletion_color()
+        self._end_tab_color()
 
     def edge_color_mode(self) -> str:
         return self.edge_color_combo.currentData()
@@ -1632,6 +1820,7 @@ class NetworkTab(QWidget):
             self._update_condition_presence()
             self._on_deletion_map_changed()
             self._refill_gene_list()
+            self._sync_condition_genes()
             # 経路は操作中の表示枠にだけ出す（ほかの枠は普段の地図に戻す）
             for p in self.panes:
                 if p is not pane:
@@ -1685,6 +1874,7 @@ class NetworkTab(QWidget):
             self._update_condition_presence()
             self._on_deletion_map_changed()
             self._refill_gene_list()
+            self._sync_condition_genes()
 
     def _gene_names(self) -> list[str]:
         return sorted(p.gene_name for p in self.model.proteins.values())

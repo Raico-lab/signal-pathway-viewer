@@ -344,7 +344,8 @@ class GraphPane(QFrame):
     def fit_view(self) -> None:
         self.activate()
         self.js("app.fit()")
-        self.js("app.clearHighlight()")
+        if not self.picked:   # 緑で選んでいるときは、その強調（線の表示）を保つ
+            self.js("app.clearHighlight()")
 
     def _small_button(self, text: str, slot, tooltip: str = "") -> QPushButton:
         button = QPushButton(text)

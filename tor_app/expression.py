@@ -51,6 +51,17 @@ def kinds_for(condition: str) -> list[str]:
     return [k for k in KINDS if k in have]
 
 
+def condition_kinds() -> dict[str, set[str]]:
+    """条件のキー → その条件で測った種類（mrna / phospho / protein）。"""
+    con = _db()
+    if con is None:
+        return {}
+    out: dict[str, set[str]] = {}
+    for cond, kind in con.execute("SELECT DISTINCT condition, kind FROM summary"):
+        out.setdefault(cond, set()).add(kind)
+    return out
+
+
 def values(kind: str, condition: str) -> dict[str, tuple[float, str]]:
     """ORF → (値, 補足)。補足はリン酸化の部位（補正後も有意なら末尾に "*"）。"""
     con = _db()
