@@ -1132,8 +1132,6 @@ class GraphPane(QFrame):
         if not self.model:
             return
         self.sub = self._build_sub()
-        names = ", ".join(self.focus_names) if self.focus_names else "未選択"
-        self._names_text = names
         self.update_count_label()
         # まとめの遺伝子（線を隠して枠に並べるもの）は軽いので数えない
         laid = len(self.sub.nodes) - sum(len(g) for g in self.sub.bundles.values())
@@ -1248,11 +1246,11 @@ class GraphPane(QFrame):
         self.update_count_label()
 
     def update_count_label(self) -> None:
-        """上の行の「中心・遺伝子数・線数」。線は凡例のチェックで隠したものを除いて数える。"""
-        if not self.model or not hasattr(self, "_names_text"):
+        """上の行の「遺伝子数・線数」。線は凡例のチェックで隠したものを除いて数える。"""
+        if not self.model:
             return
         edges = self.model.count_edges(self.sub, self.tab.known_only(), self.tab.hidden_filters())
-        self.focus_label.setText(f" 中心: {self._names_text}  遺伝子 {len(self.sub.nodes)} 個　線 {edges} 本")
+        self.focus_label.setText(f" 遺伝子 {len(self.sub.nodes)} 個　線 {edges} 本")
 
     # ================= 保存・書き出し =================
     def _default_file_name(self, ext: str) -> str:
