@@ -963,22 +963,19 @@ class NetworkTab(QWidget):
         self.data_cond_combo.setCurrentIndex(max(0, self.data_cond_combo.findData(key)))
         self.data_cond_combo.blockSignals(False)
         self._save_view()
-        if self.color_mode() == kind:
-            self._push_data_values()   # 条件だけが変わった
-        else:
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+        self._set_color(kind)
 
     def _on_condition_kind(self, kind: str) -> None:
         self._refill_condition_list()
         if self.data_kind() is not None and kind != self.data_kind():
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))   # 色分け中なら地図も変える
+            self._set_color(kind)   # 色分け中なら地図も変える
 
     def _check_condition_selection(self) -> None:
-        """条件の選択が外れたら（一覧に、色分けしている条件が選ばれていない）、役割の色に戻す。"""
+        """条件の選択が外れたら（一覧で条件が 1 つも選ばれていない）、役割の色に戻す。
+        別の条件を押している途中（押し下げた時点で選択が移る）は戻さない（押し終えたときにその条件の色にする）。"""
         if getattr(self, "cond_list", None) is None or self.data_kind() is None:
             return
-        if self.cond_mode.currentData() == "genes" and self.data_condition() in {
-                it.data(Qt.ItemDataRole.UserRole) for it in self.cond_list.selectedItems()}:
+        if self.cond_mode.currentData() == "genes" and self.cond_list.selectedItems():
             return
         self._end_tab_color()
 
@@ -1670,29 +1667,39 @@ class NetworkTab(QWidget):
     def color_mode(self) -> str:
         return self.color_combo.currentData()
 
+    def _set_color(self, mode: str) -> None:
+        """地図の遺伝子の色を mode にする。値（発現・破壊株の実測）を先に送ってから色を切り替える
+        （色を先に変えると、前の値・空の値で一度塗ってから塗り直すので、色が一瞬変わって見える）。"""
+        if self.color_mode() == mode:
+            self._push_data_values()   # 条件・株だけが変わった
+            return
+        self.color_combo.blockSignals(True)
+        self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(mode)))
+        self.color_combo.blockSignals(False)
+        self._push_data_values()   # 値を送る（説明欄・タブもそろえる）
+        self._all_js(f"app.setColorMode({json.dumps(self.color_mode())})")
+        self.sync_view_choices()
+        self._save_view()
+
     def _color_by_deletion(self, kind: str) -> None:
         """地図を破壊株の実測（kind は del_mrna / del_phospho）で色分けする。"""
-        if self.color_mode() == kind:
-            self._push_data_values()   # 株だけが変わった
-        else:
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(kind)))
+        self._set_color(kind)
 
     def _end_tab_color(self) -> None:
         """左のタブ（条件・破壊株）での色分けをやめ、役割の色に戻す。"""
         if self.color_mode() != "role":
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData("role")))
+            self._set_color("role")
 
     def _check_deletion_selection(self) -> None:
-        """破壊株タブで株の選択が外れたら（上の一覧・「変化した遺伝子」の下の欄のどちらにも、色分けしている株が
-        選ばれていない）、役割の色に戻す。"""
+        """破壊株タブで株の選択が外れたら（上の一覧・「変化した遺伝子」の下の欄で、株が 1 つも選ばれていない）、役割の色に戻す。
+        別の株を押している途中（押し下げた時点で選択が移る）は戻さない（押し終えたときにその株の色にする）。"""
         if getattr(self, "del_list", None) is None or self.deletion_kind() is None:
             return
-        strain = self.deletion_strain()
         if self.del_search_mode.currentData() == "changed":
-            chosen = {it.data(Qt.ItemDataRole.UserRole) for it in self.del_changes.selectedItems()}
-            if ("strain", strain) in chosen:
+            if any(isinstance(d := it.data(Qt.ItemDataRole.UserRole), tuple) and d[0] == "strain"
+                   for it in self.del_changes.selectedItems()):
                 return
-        elif strain in {it.data(Qt.ItemDataRole.UserRole) for it in self.del_list.selectedItems()}:
+        elif self.del_list.selectedItems():
             return
         self._end_tab_color()
 
