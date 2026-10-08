@@ -31,6 +31,7 @@ class _Fetched(QObject):
 PAGE_SIZE = 10   # 論文を 1 ページに並べる本数（スクロールせずに収まる数）
 ROW_BG = ("#ffffff", "#f5f7fa")   # 行を 1 行おきに塗り分ける
 SITE_COLUMNS = 4   # サイトを横に並べる数（上の枠に収まるように）
+URL_COLOR = "#1a5fb4"   # URL の文字の色
 HEAD = "color:#000;font-size:11px;font-weight:bold;letter-spacing:1px"
 
 
@@ -130,11 +131,11 @@ class SourcesTab(QWidget):
             n += int(m.group(0).replace(",", "")) if m else 0
             return _number(f"{n:,}", 13) if n else ""
 
-        def link(url: str, text: str) -> str:
-            return f"<a href='{html.escape(url)}' style='color:#000;text-decoration:none'>{html.escape(text)}</a>"
+        def link(url: str, text: str, color: str = "#000") -> str:
+            return f"<a href='{html.escape(url)}' style='color:{color};text-decoration:none'>{html.escape(text)}</a>"
 
         def site_cells(s: dict) -> str:
-            hosts = "<br>".join(link(x["url"], re.sub(r"^https?://(www\.)?|/$", "", x["url"]))
+            hosts = "<br>".join(link(x["url"], re.sub(r"^https?://(www\.)?|/$", "", x["url"]), URL_COLOR)
                                for x in [s] + s.get("includes", []))
             # データの利用条件（data/sources.json の license。詳しくは DATA_LICENSES.md）
             lic = f"<br><span style='color:#555;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
@@ -212,7 +213,7 @@ class SourcesTab(QWidget):
             f"<tr bgcolor='{ROW_BG[i % 2]}'><td>"
             f"<span style='font-size:13px;color:#000'>{html.escape(p['title'])}</span><br>"
             f"<span style='color:#000;font-size:11px'>{html.escape(p['cite'])}</span>　"
-            f"<a href='{html.escape(p['url'])}' style='color:#000;text-decoration:none;font-size:11px'>"
+            f"<a href='{html.escape(p['url'])}' style='color:{URL_COLOR};text-decoration:none;font-size:11px'>"
             f"{html.escape(p['url'])}</a></td></tr>" for i, p in enumerate(shown))
         self.papers_view.setHtml(
             "<table width='100%' cellspacing='0' cellpadding='8'>" + rows + "</table>"
