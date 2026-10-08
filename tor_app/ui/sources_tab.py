@@ -3,7 +3,7 @@
 サイト: data/sources.json の sites（名前・URL・根拠欄で見分ける語）と、それが根拠になっている関係の本数。
 同じところが出すもの（SGD と SGD SPELL、BioGRID と PhosphoGRID）は includes で 1 つにまとめ、cite にサイトが引用を求める論文を並べる。
 論文: data/papers.json（tools/fetch_paper_list.py が作る。1 本ずつ書誌と URL）。
-10 本ずつのページに分け（スクロールなし）、題名で絞り込める。サイトの本数は DB を開いたときに数える。
+10 本ずつのページに分け（枠の縦幅に収まらないときはスクロール）、題名で絞り込める。サイトの本数は DB を開いたときに数える。
 サーバーがあれば、論文・サイトの情報はサーバーのものを使う（tor_app/server.py。取れるまでは手元の写しか同梱のもの）。
 """
 import html
@@ -28,7 +28,7 @@ class _Fetched(QObject):
     done = pyqtSignal()
 
 
-PAGE_SIZE = 10   # 論文を 1 ページに並べる本数（スクロールせずに収まる数）
+PAGE_SIZE = 10   # 論文を 1 ページに並べる本数
 ROW_BG = ("#ffffff", "#f5f7fa")   # 行を 1 行おきに塗り分ける
 SITE_COLUMNS = 4   # サイトを横に並べる数（上の枠に収まるように）
 URL_COLOR = "#1a5fb4"   # URL の文字の色
@@ -51,7 +51,7 @@ class SourcesTab(QWidget):
         self.papers_view = QTextBrowser()
         self.papers_view.setOpenLinks(False)
         self.papers_view.anchorClicked.connect(open_url)
-        self.papers_view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)   # ページで送る
+        self.papers_view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)   # 縦幅に収まらないときだけスクロール
         self.search = QLineEdit()
         self.search.setPlaceholderText("題名・著者で検索")
         self.search.setClearButtonEnabled(True)
@@ -218,3 +218,4 @@ class SourcesTab(QWidget):
         self.papers_view.setHtml(
             "<table width='100%' cellspacing='0' cellpadding='8'>" + rows + "</table>"
             if shown else "<span style='color:#999'>該当する論文はありません</span>")
+        self.papers_view.verticalScrollBar().setValue(0)   # ページを送ったら一番上から（ブラウザ版は中身を替えても位置が残る）
