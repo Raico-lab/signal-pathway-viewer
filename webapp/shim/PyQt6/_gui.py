@@ -159,6 +159,7 @@ class QCursor:
 
 
 _LAST_POS = [0, 0]
+_LAST_MODS = [0]   # 最後に一覧を押したときの Shift・⌘（QApplication.keyboardModifiers が返す）
 
 
 class QGuiApplication:

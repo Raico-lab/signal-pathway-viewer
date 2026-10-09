@@ -7,7 +7,7 @@ import js
 
 from . import _dom
 from ._core import QCoreApplication, QEvent, QMouseEvent, QObject, QPoint, QPointF, Qt, _filtered, pyqtSignal
-from ._gui import QAction, QColor, QPalette, _LAST_POS
+from ._gui import QAction, QColor, QPalette, _LAST_MODS, _LAST_POS
 from ._widgets import (QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, _next_z, _registry,
                        _visibility_changed, widget_of)
 
@@ -736,7 +736,7 @@ class QApplication(QCoreApplication):
 
     @staticmethod
     def keyboardModifiers():
-        return Qt.KeyboardModifier.NoModifier
+        return Qt.KeyboardModifier(_LAST_MODS[0])   # 一覧を押したときのもの（⌘ は Qt と同じく Control）
 
     @staticmethod
     def palette():

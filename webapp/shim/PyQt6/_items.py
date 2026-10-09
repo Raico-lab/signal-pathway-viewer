@@ -6,7 +6,7 @@ import js
 
 from . import _dom
 from ._core import (QModelIndex, QObject, QPoint, QItemSelectionModel, QStringListModel, Qt, pyqtSignal)
-from ._gui import QBrush, QColor, QFont, QFontMetrics
+from ._gui import QBrush, QColor, QFont, QFontMetrics, _LAST_MODS
 from ._widgets import QAbstractScrollArea, QSizePolicy, QWidget, _px, _visibility_changed
 
 ROLE = Qt.ItemDataRole
@@ -313,6 +313,8 @@ class QListWidget(QAbstractItemView):
             return
         if str(ev.target.tagName).upper() == "INPUT":
             return
+        _LAST_MODS[0] = ((int(Qt.KeyboardModifier.ShiftModifier) if ev.shiftKey else 0)
+                         | (int(Qt.KeyboardModifier.ControlModifier) if ev.metaKey or ev.ctrlKey else 0))
         self.itemPressed.emit(item)
         if self._extend_mode() and (ev.metaKey or ev.ctrlKey):
             self._set_selected(item, item not in self._selected)
