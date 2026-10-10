@@ -53,7 +53,7 @@ class SavedViewsPanel(QWidget):
         self._press_on_current = False          # 選んでいる登録をもう一度押したか（押したら選択を外す）
         self._filtering = False                 # アプリ全体のイベントフィルタを入れているか（選んでいる間だけ）
         layout = QVBoxLayout(self)
-        layout.addWidget(self._title("登録する項目"))
+        layout.addWidget(self._heading("登録する項目"))
         self.part_checks: dict[str, QCheckBox] = {}
         for key, (label, desc) in PARTS.items():
             cb = QCheckBox(label)
@@ -78,7 +78,7 @@ class SavedViewsPanel(QWidget):
         layout.addLayout(name_row)
 
         layout.addSpacing(8)
-        layout.addWidget(self._title("登録した表示"))
+        layout.addWidget(self._heading("登録した表示"))
         self.list = QListWidget()
         self.list.setMinimumHeight(160)
         self.list.currentItemChanged.connect(lambda *_: self._show_summary())
@@ -100,7 +100,7 @@ class SavedViewsPanel(QWidget):
         self._refresh_list()
 
     @staticmethod
-    def _title(text: str) -> QLabel:
+    def _heading(text: str) -> QLabel:
         label = QLabel(text)
         font = label.font()
         font.setBold(True)

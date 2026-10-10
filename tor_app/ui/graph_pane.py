@@ -712,11 +712,15 @@ class GraphPane(QFrame):
             lines.append(f"{relation_paths.ENUM_CAP} 本に達して数えるのをやめた組が {result.capped} 組あります")
         if mode in ("regulators", "targets"):
             kind = "共通の制御因子" if mode == "regulators" else "共通の標的"
+            listed = [graph.label(u) for u in list(result.common)[:self.RELATION_COMMON_SHOWN]]   # 多いときは初めの分だけ
+            rest = len(result.common) - len(listed)
             lines.append(f"{kind} {len(result.common)} 個: "
-                         + ("、".join(graph.label(u) for u in result.common) if result.common else "なし"))
+                         + ("、".join(listed) + (f" ほか {rest} 個" if rest > 0 else "") if result.common else "なし"))
         if result.missing:
             lines.append(f"{'・'.join(graph.label(u) for u in result.missing)} は {steps} 段の経路でつながっていません")
         return "\n".join(lines)
+
+    RELATION_COMMON_SHOWN = 30   # 経路タブの結果に名前を並べる共通の制御因子・標的の数（すべては一覧の上流に並ぶ）
 
     def relation_count(self) -> int | None:
         """今の経路タブの経路の本数（経路を表示していなければ None）。"""

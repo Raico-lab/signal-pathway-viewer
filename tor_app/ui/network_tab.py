@@ -1326,8 +1326,7 @@ class NetworkTab(QWidget):
         for key, (label, _desc, _) in GraphPane.RELATION_MODES.items():
             self.rel_mode.addItem(label, key)
         # 長い表示名でもタブの幅を広げない（選んだ表示経路の説明は吹き出しに出す）
-        self.rel_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.rel_mode.setMinimumContentsLength(8)
+        self._narrow_combo(self.rel_mode, 8)
         top_row.addWidget(self.rel_mode, 3)
         self.rel_search = QLineEdit()
         self.rel_search.setPlaceholderText("名前で絞り込む")
@@ -1339,8 +1338,7 @@ class NetworkTab(QWidget):
         settings = QHBoxLayout()   # 基準の遺伝子と段数は 1 行に
         settings.addWidget(QLabel("基準"))
         self.rel_anchor = QComboBox()
-        self.rel_anchor.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.rel_anchor.setMinimumContentsLength(6)
+        self._narrow_combo(self.rel_anchor, 6)
         self.rel_anchor.setToolTip("チェックした遺伝子から選びます。選ぶと、基準の遺伝子が端にある経路だけを一覧にします。\n"
                                    "「基準の遺伝子へ・から作用している経路」では必ず選びます")
         settings.addWidget(self.rel_anchor, 1)
@@ -1398,9 +1396,9 @@ class NetworkTab(QWidget):
         self.rel_tree.itemSelectionChanged.connect(self._on_relation_path_selected)
         self.rel_tree.itemExpanded.connect(self._fill_group)
         self.rel_tree.itemClicked.connect(self._on_relation_tree_clicked)
-        for w in (self.rel_result, self.rel_path_filter):
-            paths_layout.addWidget(w)
+        paths_layout.addWidget(self.rel_path_filter)
         paths_layout.addWidget(self.rel_tree, 1)
+        paths_layout.addWidget(self.rel_result)   # 一覧の下に置き、一覧の位置を動かさない
         layout.addWidget(self.rel_paths_box, 1)
         self._rel_filter_unit: int | None = None   # 地図でクリックして一覧を絞っている単位
         self._rel_sel_serial = 0      # 一覧の選択が変わった回数（選んだ経路をもう一度押したかを見分ける）
@@ -1434,6 +1432,16 @@ class NetworkTab(QWidget):
         self._update_relation_mode_tip()
         self._update_relation_genes()
         return scroll
+
+    @staticmethod
+    def _narrow_combo(combo: QComboBox, chars: int) -> None:
+        """選択肢が長くても、選択欄の幅を広げない（ブラウザ版の Qt 互換層には SizeAdjustPolicy がない）。"""
+        policy = getattr(QComboBox, "SizeAdjustPolicy", None)
+        if policy is not None:
+            combo.setSizeAdjustPolicy(policy.AdjustToMinimumContentsLengthWithIcon)
+        else:   # ブラウザ版: 一番長い選択肢の幅まで広がるので、文字数ぶんの幅で止める
+            combo.setMaximumWidth(chars * 16 + 40)
+        combo.setMinimumContentsLength(chars)
 
     @staticmethod
     def _relation_title(text: str) -> QLabel:
