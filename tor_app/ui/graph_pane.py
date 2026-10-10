@@ -261,6 +261,11 @@ class GraphPane(QFrame):
             self.view_bar.addWidget(QLabel(label))
             self.view_bar.addWidget(pick)
             self.view_bar.addSpacing(4)
+        # 設定をクリア: 線の色の右隣（共通の設定の行に置く）
+        self.clear_settings_button = self._small_button(
+            "設定をクリア", lambda: self.tab.reset_settings(self),
+            "TF・経路・条件・配置・色・線・凡例の設定を最初の状態に戻します（注目・拡張・段数はそのまま）")
+        self.view_bar.addWidget(self.clear_settings_button)
         self.view_bar.addStretch(1)
         # この表示枠の図全体を画像で保存する（画面に見えていない部分も含む）
         for w in (self._small_button("PNG", self.export_png, "この表示枠の図全体を、3 倍の解像度の PNG 画像で保存します"),
@@ -280,12 +285,8 @@ class GraphPane(QFrame):
         self.focus_label = ShrinkLabel()
         self.lod_label = ShrinkLabel()
         self.lod_label.setStyleSheet("color:#777;")
-        self.clear_settings_button = self._small_button(
-            "設定をクリア", lambda: self.tab.reset_settings(self),
-            "TF・経路・条件・配置・色・線・凡例の設定を最初の状態に戻します（注目・拡張・段数はそのまま）")
         self.info_bar = QHBoxLayout()
-        for w in (QLabel("上流"), self.up_spin, QLabel("段 下流"), self.down_spin, QLabel("段"), self.focus_label,
-                  self.clear_settings_button):
+        for w in (QLabel("上流"), self.up_spin, QLabel("段 下流"), self.down_spin, QLabel("段"), self.focus_label):
             self.info_bar.addWidget(w)
         self.info_bar.addStretch(1)
         self.info_bar.addWidget(self.lod_label)
