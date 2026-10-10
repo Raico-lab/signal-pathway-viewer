@@ -1700,6 +1700,12 @@ class QLineEdit(QWidget):
         _dom.listen(self, self._el, "input", self._on_input)
         _dom.listen(self, self._el, "keydown", self._on_key)
         _dom.listen(self, self._el, "blur", lambda ev: self.editingFinished.emit())
+        # 日本語などの変換: 確定の Enter を「Enter を押した」として扱わない（Safari などは確定の Enter を
+        # isComposing なしで送るので、変換の始まりと終わりを自分で見る）
+        self._composing = False
+        self._composed_at = 0.0
+        _dom.listen(self, self._el, "compositionstart", lambda ev: setattr(self, "_composing", True))
+        _dom.listen(self, self._el, "compositionend", self._on_composition_end)
 
     def _on_input(self, ev):
         text = str(self._el.value)
@@ -1708,7 +1714,18 @@ class QLineEdit(QWidget):
         if self._completer is not None:
             self._completer._on_typed(text)
 
+    def _on_composition_end(self, ev):
+        self._composing = False
+        self._composed_at = float(js.Date.now())
+
+    def _in_composition(self, ev) -> bool:
+        """変換中か、変換を確定した直後（確定の Enter）のキーか。"""
+        return bool(ev.isComposing or int(ev.keyCode or 0) == 229 or self._composing
+                    or float(js.Date.now()) - self._composed_at < 80)
+
     def _on_key(self, ev):
+        if str(ev.key) == "Enter" and self._in_composition(ev):
+            return   # 変換の確定は入力欄に任せる（登録・候補の確定などはしない）
         kev = key_event(ev)
         if self._completer is not None and self._completer._handle_key(ev):
             ev.preventDefault()
@@ -1716,7 +1733,7 @@ class QLineEdit(QWidget):
         if _filtered(self, kev):
             ev.preventDefault()
             return
-        if str(ev.key) == "Enter" and not ev.isComposing:
+        if str(ev.key) == "Enter":
             ev.preventDefault()
             self.returnPressed.emit()
             return
