@@ -11,7 +11,7 @@
   const EFFECT_COLORS = { activate: "#e53935", inhibit: "#1e88e5", none: "#757575", binding: "#bdbdbd" };
   const edgeEffectKey = (e) => (e.data("directed") === false ? "binding" : e.data("effect") || "none");
   const edgeColor = (e) => (edgeColorMode === "effect" ? EFFECT_COLORS[edgeEffectKey(e)] || EFFECT_COLORS.none : e.data("color"));
-  let lastLegend = { types: [], categories: [], roles: [], levels: [] };
+  let lastLegend = { types: [], categories: [], roles: [] };
   let hidden = { roles: [], types: [], effects: [] };   // チェックを外した（隠す）役割・制御の種類・作用の向き
   let currentLayout = "dagre_tb";
   let showSymbols = false;   // 線上の文字（種類記号）は既定で表示しない
@@ -121,7 +121,6 @@
   function nodeFill(n) {
     if (n.data("isLabel") || n.data("isCxLabel")) return "#ffffff";   // 段の見出し・複合体の名札（背景は透明にしている）
     if (colorMode === "role") return n.data("roleColor");
-    if (colorMode === "level") return n.data("levelColor");
     if (DATA_KINDS.includes(colorMode)) {
       if (dataKo && n.data("gene") === dataKo) return DATA_KO;
       const v = dataValues[n.data("gene")];
@@ -1377,21 +1376,15 @@
     const row = (color, name, cls = "", kind = null, key = null) =>
       legendRow(kind, key, `<span class="swatch${cls}" style="background:${color}"></span>${name}`);
     const roleRows = (lastLegend.roles || []).map((r) => row(r.color, r.name, "", "roles", r.key)).join("");
-    const titles = { role: "役割", level: "階層" };
+    const titles = { role: "役割" };
     let html = "";
     if (DATA_KINDS.includes(colorMode)) {
       titles[colorMode] = dataTitle || "";
       html = [2, 1, 0.5, 0, -0.5, -1, -2].map((v) =>
         row(dataColor(v), `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v)}${Math.abs(v) === DATA_MAX ? " 以上" : ""}`)).join("")
         + (dataKo ? row(DATA_KO, "壊した遺伝子") : "")
-        + row(DATA_NONE, "データなし") + `<div class="legend-row" style="color:#777">${dataNote || "対照との log2 比"}。+1 は 2 倍</div>`;
+        + row(DATA_NONE, "データなし") + `<div class="legend-row" style="color:#777">${dataNote || "log2 比"}</div>`;
     } else if (colorMode === "role") html = roleRows;
-    else if (colorMode === "level") {
-      // 全体の階層をすべて並べ、今の表示に出ていない階層は薄く表示する
-      html = (lastLegend.levels || []).map((l) =>
-          `<div class="legend-row" style="opacity:${l.shown ? 1 : 0.35}"><span class="swatch" style="background:${l.color}"></span>${l.name}</div>`
-        ).join("");
-    }
     document.getElementById("legend-node-title").textContent = titles[colorMode] || "";
     document.getElementById("legend-nodes").innerHTML = html;
     // 「遺伝子の色」欄の見出しのチェックボックスは、役割で色分けしている（行にチェックがある）ときだけ出す
@@ -1406,7 +1399,18 @@
   window.addEventListener("wheel", (e) => { if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false });
   window.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && ["+", "-", "=", "0", ";"].includes(e.key)) e.preventDefault();
-  });
+    // ブラウザ版: 戻る・進む（⌘[ ⌘] ⌥← ⌥→）は外側の画面に渡す（ブラウザ自身の履歴移動はさせない）
+    const back = (e.metaKey && e.key === "[") || (e.altKey && e.key === "ArrowLeft");
+    const fwd = (e.metaKey && e.key === "]") || (e.altKey && e.key === "ArrowRight");
+    if ((back || fwd) && window.frameElement) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.frameElement.ownerDocument.dispatchEvent(new KeyboardEvent("keydown", {
+        key: e.key, code: e.code, metaKey: e.metaKey, altKey: e.altKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey,
+        bubbles: true, cancelable: true,
+      }));
+    }
+  }, true);
   ["gesturestart", "gesturechange"].forEach((t) => document.addEventListener(t, (e) => e.preventDefault()));
   // それでもページが拡大された場合は、凡例を拡大率の逆数で縮めて見た目の大きさと位置を保つ
   function keepLegendSize() {
@@ -1507,7 +1511,7 @@
       if (!elements.length) {
         endBusy();
         showMessage("上の欄に注目する遺伝子名を入力して「表示」を押してください。例: TOR1");
-        renderLegend({ types: [], categories: [], roles: [], levels: [] });
+        renderLegend({ types: [], categories: [], roles: [] });
         return;
       }
       showMessage("");

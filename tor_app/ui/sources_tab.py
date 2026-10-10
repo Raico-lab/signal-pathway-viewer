@@ -29,16 +29,19 @@ class _Fetched(QObject):
 
 
 PAGE_SIZE = 10   # 論文を 1 ページに並べる本数
-ROW_BG = ("#ffffff", "#f5f7fa")   # 行を 1 行おきに塗り分ける
+ROW_BG = ("transparent", "rgba(128,128,128,0.10)")   # 行を 1 行おきに塗り分ける（地の色に重ねる薄い灰。暗い画面でも読める）
 SITE_COLUMNS = 4   # サイトを横に並べる数（上の枠に収まるように）
 URL_COLOR = "#1a5fb4"   # URL の文字の色
-HEAD = "color:#000;font-size:11px;font-weight:bold;letter-spacing:1px"
 
 
 def _number(n: str, size: int = 17) -> str:
     """数だけを太字で（単位は付けない）。"""
-    return f"<span style='font-size:{size}px;font-weight:bold;color:#000'>{n}</span>"
+    return f"<span style='font-size:{size}px;font-weight:bold'>{n}</span>"
 
+
+def _bg(row: int) -> str:
+    """1 行おきの地の色（表のマスに付ける）。"""
+    return f" style='background-color:{ROW_BG[row % 2]}'" if row % 2 else ""
 
 
 class SourcesTab(QWidget):
@@ -53,7 +56,7 @@ class SourcesTab(QWidget):
         self.papers_view.anchorClicked.connect(open_url)
         self.papers_view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)   # 縦幅に収まらないときだけスクロール
         self.search = QLineEdit()
-        self.search.setPlaceholderText("題名・著者で検索")
+        self.search.setPlaceholderText("題名・著者で絞り込む")
         self.search.setClearButtonEnabled(True)
         self.search.setMaximumWidth(320)
         self.search.textChanged.connect(lambda _t: self._show_page(0))
@@ -131,14 +134,14 @@ class SourcesTab(QWidget):
             n += int(m.group(0).replace(",", "")) if m else 0
             return _number(f"{n:,}", 13) if n else ""
 
-        def link(url: str, text: str, color: str = "#000") -> str:
+        def link(url: str, text: str, color: str = URL_COLOR) -> str:
             return f"<a href='{html.escape(url)}' style='color:{color};text-decoration:none'>{html.escape(text)}</a>"
 
-        def site_cells(s: dict) -> str:
-            hosts = "<br>".join(link(x["url"], re.sub(r"^https?://(www\.)?|/$", "", x["url"]), URL_COLOR)
+        def site_cells(s: dict, bg: str) -> str:
+            hosts = "<br>".join(link(x["url"], re.sub(r"^https?://(www\.)?|/$", "", x["url"]))
                                for x in [s] + s.get("includes", []))
             # データの利用条件（data/sources.json の license。詳しくは DATA_LICENSES.md）
-            lic = f"<br><span style='color:#555;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
+            lic = f"<br><span style='color:#888;font-size:10px'>{html.escape(s['license'])}</span>" if s.get("license") else ""
             # サイトが引用を求める論文（著者と年だけ。押すと論文を開く。papers.json に書誌がなければ PMID で）
             def short(p: dict) -> str:
                 return p["cite"][:p["cite"].find(p["year"]) + len(p["year"])] if p.get("year") in p["cite"] else p["cite"]
@@ -147,17 +150,15 @@ class SourcesTab(QWidget):
                 "<br><span style='font-size:10px'>" + (link(papers[pmid]["url"], short(papers[pmid])) if pmid in papers
                                                        else link(f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/", f"PMID {pmid}"))
                 + "</span>" for pmid in s.get("cite", []))
-            return (f"<td><a href='{s['url']}' style='color:#000;text-decoration:none;"
+            return (f"<td{bg}><a href='{html.escape(s['url'])}' style='color:{URL_COLOR};text-decoration:none;"
                     f"font-weight:bold;font-size:12px'>{html.escape(s['name'])}</a><br>"
                     f"<span style='font-size:10px'>{hosts}</span>{lic}{cites}</td>"
-                    f"<td align='right' valign='middle'>{site_count(s)}</td><td width='24'></td>")
+                    f"<td align='right' valign='middle'{bg}>{site_count(s)}</td><td width='24'{bg}></td>")
 
         # 横に SITE_COLUMNS 個ずつ並べる（上の枠に収まるように）
         rows = [sites[k:k + SITE_COLUMNS] for k in range(0, len(sites), SITE_COLUMNS)]
-        head = f"<td style='{HEAD}'>サイト</td><td align='right' style='{HEAD}'>根拠の数</td><td></td>" * SITE_COLUMNS
-        body = "".join(f"<tr bgcolor='{ROW_BG[r % 2]}'>" + "".join(site_cells(x) for x in row) + "</tr>"
-                       for r, row in enumerate(rows))
-        self.sites_view.setHtml(f"<table width='100%' cellspacing='0' cellpadding='6'><tr>{head}</tr>{body}</table>")
+        body = "".join("<tr>" + "".join(site_cells(x, _bg(r)) for x in row) + "</tr>" for r, row in enumerate(rows))
+        self.sites_view.setHtml(f"<table width='100%' cellspacing='0' cellpadding='6'>{body}</table>")
         self._fit_sites()
         self._show_page(self.page)
 
@@ -210,12 +211,12 @@ class SourcesTab(QWidget):
         self.next_button.setEnabled(self.page < pages - 1)
 
         rows = "".join(
-            f"<tr bgcolor='{ROW_BG[i % 2]}'><td>"
-            f"<span style='font-size:13px;color:#000'>{html.escape(p['title'])}</span><br>"
-            f"<span style='color:#000;font-size:11px'>{html.escape(p['cite'])}</span>　"
+            f"<tr><td{_bg(i)}>"
+            f"<span style='font-size:13px'>{html.escape(p['title'])}</span><br>"
+            f"<span style='font-size:11px'>{html.escape(p['cite'])}</span>　"
             f"<a href='{html.escape(p['url'])}' style='color:{URL_COLOR};text-decoration:none;font-size:11px'>"
             f"{html.escape(p['url'])}</a></td></tr>" for i, p in enumerate(shown))
         self.papers_view.setHtml(
             "<table width='100%' cellspacing='0' cellpadding='8'>" + rows + "</table>"
-            if shown else "<span style='color:#999'>該当する論文はありません</span>")
+            if shown else "<span style='color:#888'>該当する論文はありません</span>")
         self.papers_view.verticalScrollBar().setValue(0)   # ページを送ったら一番上から（ブラウザ版は中身を替えても位置が残る）

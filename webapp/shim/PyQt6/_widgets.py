@@ -1711,12 +1711,15 @@ class QLineEdit(QWidget):
         text = str(self._el.value)
         self.textEdited.emit(text)
         self.textChanged.emit(text)
-        if self._completer is not None:
+        # 変換中の読みでは候補を出さない（確定したときに出す）
+        if self._completer is not None and not self._composing:
             self._completer._on_typed(text)
 
     def _on_composition_end(self, ev):
         self._composing = False
         self._composed_at = float(js.Date.now())
+        if self._completer is not None:
+            self._completer._on_typed(str(self._el.value))
 
     def _in_composition(self, ev) -> bool:
         """変換中か、変換を確定した直後（確定の Enter）のキーか。"""
@@ -1724,8 +1727,8 @@ class QLineEdit(QWidget):
                     or float(js.Date.now()) - self._composed_at < 80)
 
     def _on_key(self, ev):
-        if str(ev.key) == "Enter" and self._in_composition(ev):
-            return   # 変換の確定は入力欄に任せる（登録・候補の確定などはしない）
+        if self._in_composition(ev):
+            return   # 変換中のキー（確定の Enter・候補を選ぶ ↑↓・取り消しの Esc など）は入力欄に任せる
         kev = key_event(ev)
         if self._completer is not None and self._completer._handle_key(ev):
             ev.preventDefault()

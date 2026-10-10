@@ -139,11 +139,7 @@ class NetworkTab(QWidget):
         self.layout_combo.blockSignals(False)
         self.color_combo.blockSignals(True)
         self.color_combo.setCurrentIndex(max(0, self.color_combo.findData(color_mode)))
-        self.color_combo.blockSignals(False)
-        if self.data_kind() is not None:   # 以前の版で条件の測定で色分けしていた（今は選べない）: 役割に戻す
-            self.color_combo.blockSignals(True)
-            self.color_combo.setCurrentIndex(max(0, self.color_combo.findData("role")))
-            self.color_combo.blockSignals(False)
+        self.color_combo.blockSignals(False)   # 以前の版の「階層」「発現」などは選択肢にないので役割になる
         self.edge_color_combo.blockSignals(True)
         self.edge_color_combo.setCurrentIndex(max(0, self.edge_color_combo.findData(edge_color)))
         self.edge_color_combo.blockSignals(False)
@@ -168,13 +164,8 @@ class NetworkTab(QWidget):
             lambda: self._all_js(f"app.runLayout({json.dumps(self.layout_name())})"))
         self.color_combo = QComboBox()
         self.color_combo.addItem("役割", "role")
-        tip = ("遺伝子の色\n役割: SGD の機能説明から推定したキナーゼ・転写制御因子などの分類\n"
-               "階層: ネットワーク全体で上流の起点から何段目か。青＝上流側 → 赤紫＝下流側")
-        if expression.available():
-            for key, label in expression.KINDS.items():
-                self.color_combo.addItem(label, key)
-            tip += ("\n発現・リン酸化・タンパク質量: 右の「条件」で選んだ条件での、対照との log2 比。"
-                    "赤＝増える、青＝減る、灰＝データなし")
+        # 画面には出さない（役割の色が普段。破壊株タブで株を選んでいる間だけ破壊株の実測の色）
+        tip = "遺伝子の色\n役割: SGD の機能説明から推定したキナーゼ・転写制御因子などの分類"
         if expression.has_deletions():
             for key, label in expression.DELETION_KINDS.items():
                 self.color_combo.addItem(label, key)
@@ -382,22 +373,47 @@ class NetworkTab(QWidget):
             pane._record_history()
 
     def _build_trf_panel(self):
-        """左側: オレンジで注目した遺伝子を転写制御する転写因子（TFs）の一覧。チェックするとマップの一番上の段に出す。"""
+        """左側: 注目・拡張した遺伝子を転写制御する転写因子（TFs）の一覧（条件タブと同じ形: 名前で絞り込む →
+        遺伝子 → 作用 → 転写因子の開閉できる一覧 →「すべて選択」「すべて解除」→ 今の地図の TF）。
+        チェックするとマップの一番上の段に出す。"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        self.trf_layout = QVBoxLayout()
-        layout.addLayout(self.trf_layout)
-        layout.addStretch(1)
+        self.trf_search = QLineEdit()
+        self.trf_search.setPlaceholderText("名前で絞り込む")
+        self.trf_search.setClearButtonEnabled(True)
+        self.trf_search.textChanged.connect(lambda _t: self._apply_trf_search())
+        layout.addWidget(self.trf_search)
+        self._trf_open: set[str] = set()   # 開閉を既定（遺伝子は開く・作用は閉じる）から変えた欄の鍵
+        self._trf_applying = False          # 作り直し・絞り込みで開閉している間（開閉を覚えない）
+        self._trf_syncing = False           # チェックをこちらで直している間（知らせを扱わない）
+        self._trf_pending = False
+        self._trf_just_checked = False      # チェックを押した直後の itemClicked（説明は出さない）
+        self.trf_tree = self._condition_tree(start_open=True)
+        self.trf_tree.setMaximumHeight(16777215)
+        self.trf_tree.itemChanged.connect(self._on_trf_item_changed)
+        self.trf_tree.itemClicked.connect(self._on_trf_item_clicked)
+        self.trf_tree.itemExpanded.connect(lambda it: self._remember_trf_open(it, True))
+        self.trf_tree.itemCollapsed.connect(lambda it: self._remember_trf_open(it, False))
+        layout.addWidget(self.trf_tree, 1)
+        buttons = QHBoxLayout()
+        for text, on in (("すべて選択", True), ("すべて解除", False)):
+            b = QPushButton(text)
+            b.clicked.connect(lambda _=False, on=on: self._set_all_trf(on))
+            buttons.addWidget(b)
+        layout.addLayout(buttons)
+        self.trf_shown_head = QLabel("今の地図の TF")
+        self.trf_shown_head.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        layout.addWidget(self.trf_shown_head)
+        self.trf_shown = QListWidget()
+        self.trf_shown.itemClicked.connect(self._on_trf_shown_clicked)
+        layout.addWidget(self.trf_shown)
         layout.addWidget(self.help_button("trf"))
-        self.trf_scroll = QScrollArea()
-        self.trf_scroll.setWidget(panel)
-        self.trf_scroll.setWidgetResizable(True)
-        self.trf_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.trf_panel = panel
         # 左側はタブで切り替える: 遺伝子（今の地図の遺伝子）・TFs（転写因子）・経路（選んだ遺伝子どうしの経路）など
         self.left_tabs = QTabWidget()
         self.left_tabs.setMinimumWidth(290)   # 「経路」の中身（表示経路の選択肢など）が横にはみ出さない幅
         self.left_tabs.addTab(self._build_gene_panel(), "遺伝子")
-        self.left_tabs.addTab(self.trf_scroll, "TF")
+        self.left_tabs.addTab(self.trf_panel, "TF")
         self.left_tabs.addTab(self._build_relation_panel(), "経路")
         self.left_tabs.addTab(self._build_condition_panel(), "条件")
         if expression.has_deletions():
@@ -528,8 +544,8 @@ class NetworkTab(QWidget):
     def _build_deletion_panel(self) -> QWidget:
         """左の「破壊株」タブ: 遺伝子を 1 つ壊した株での実測（data/expression.db の strains・deletion。
         mRNA は Deleteome、リン酸化は Bodenmiller 2010）を地図で見る。上の一覧は、壊した遺伝子（株）か、今の地図の
-        遺伝子。名前で絞り込める。株を押すと、地図をその株の実測で色分けする（地図の上の「色」と、選んだ株を覚える選択肢と
-        そろう）。遺伝子を押すと、下の欄にその遺伝子を変化させた株が並ぶ。株は今の地図の遺伝子が変わった株、遺伝子は
+        遺伝子。名前で絞り込める。株を押すと、地図をその株の実測で色分けする（画面に出さない色と株の
+        選択肢にそろう）。遺伝子を押すと、下の欄にその遺伝子を変化させた株が並ぶ。株は今の地図の遺伝子が変わった株、遺伝子は
         どれかの株で変化した遺伝子を黒、ほかを灰色にする。"""
         try:
             saved = json.loads(VIEW_FILE.read_text(encoding="utf-8")).get("deletion") or {}
@@ -728,7 +744,7 @@ class NetworkTab(QWidget):
         self._save_view()
 
     def _sync_deletion_panel(self) -> None:
-        """破壊株タブの表示を、地図の上の「色」と、選んでいる株にそろえる。"""
+        """破壊株タブの表示を、遺伝子の色（画面に出さない選択肢）と、選んでいる株にそろえる。"""
         orf = self.deletion_strain()
         dkind = self.deletion_kind()
         for w in self.del_kind_buttons.values():
@@ -859,7 +875,7 @@ class NetworkTab(QWidget):
         if expression.available():
             self.cond_mode.addItem("遺伝子", "genes")
         self.cond_mode.setToolTip("経路: チェックした条件で報告された関係（線）を目立たせます\n"
-                                  "遺伝子: 条件を選ぶと、その条件での発現・リン酸化・タンパク質量で地図の遺伝子を色分けします")
+                                  "遺伝子: チェックした条件で発現・リン酸化・タンパク質量が 2 倍以上変化した遺伝子を目立たせます")
         top_row.addWidget(self.cond_mode)
         self.cond_search = QLineEdit()
         self.cond_search.setPlaceholderText("名前で絞り込む")
@@ -1819,8 +1835,8 @@ class NetworkTab(QWidget):
         nav = QHBoxLayout()
         self.detail_back = QPushButton("◀")
         self.detail_forward = QPushButton("▶")
-        for button, step, tip in ((self.detail_back, -1, "前に表示した遺伝子・線に戻る"),
-                                  (self.detail_forward, 1, "次に表示した遺伝子・線に進む")):
+        for button, step, tip in ((self.detail_back, -1, "前に表示した説明に戻る"),
+                                  (self.detail_forward, 1, "次に表示した説明に進む")):
             button.setFixedWidth(34)
             button.setToolTip(tip)
             button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -2368,9 +2384,9 @@ class NetworkTab(QWidget):
             if pid in sub.nodes:
                 hu, hd = sub.hidden_up.get(pid, 0), sub.hidden_down.get(pid, 0)
                 if hu or hd:
-                    hidden = f"<p style='color:#b26a00'>表示されていない上流 {hu} 個・下流 {hd} 個</p>"
+                    hidden = f"<p style='color:{self._tone('#b26a00', '#f0a040')}'>表示されていない上流 {hu} 個・下流 {hd} 個</p>"
             else:
-                hidden = "<p style='color:#b26a00'>操作中の表示枠にはありません</p>"
+                hidden = f"<p style='color:{self._tone('#b26a00', '#f0a040')}'>操作中の表示枠にはありません</p>"
             hidden += self._tf_pair_note(pid, ups + downs, sub)
         title = f"<h2 style='margin-bottom:2px'>{html.escape(p.gene_name)}</h2>"
         if self._render_pane:
@@ -2379,8 +2395,9 @@ class NetworkTab(QWidget):
                       "<span style='background-color:{3}'>&nbsp;{4}&nbsp;</span></a>").format
             title = (f"<table width='100%' cellspacing='0' cellpadding='0'><tr><td>{title}</td>"
                      f"<td align='right' valign='middle' style='white-space:nowrap'>"
-                     f"{button('mapfocus', pid, '#e65100', '#fff3e0', '注目')}&nbsp;"
-                     f"{button('mapgrow', pid, '#6a1b9a', '#f3e5f5', '拡張')}</td></tr></table>")
+                     f"{button('mapfocus', pid, self._tone('#e65100', '#ffb74d'), self._tone('#fff3e0', '#3a2a17'), '注目')}&nbsp;"
+                     f"{button('mapgrow', pid, self._tone('#6a1b9a', '#ce93d8'), self._tone('#f3e5f5', '#2f2338'), '拡張')}"
+                     f"</td></tr></table>")
         return (f"{title}"
                 f"{hidden}"
                 f"<table>{table}</table>{self._description_html(p.description or '')}{self._portal_html(p.gene_name)}"
@@ -2421,10 +2438,10 @@ class NetworkTab(QWidget):
                 site = f" <span style='color:#777;font-size:11px'>{html.escape(x.site)}</span>" if x.site else ""
                 color = ""
                 if show_strain:
-                    color = (f" <a href='kocolor:{x.strain}:{kinds[x.kind][1]}' style='text-decoration:none;font-size:11px'>"
-                             f"色分け</a>")
+                    color = (f" <a href='kocolor:{x.strain}:{kinds[x.kind][1]}' "
+                             f"style='text-decoration:none;font-size:11px;white-space:nowrap'>色分け</a>")
                 out.append(f"<tr><td align='right' style='white-space:nowrap;padding-right:6px'>{self._value_html(x.value)}</td>"
-                           f"<td>{name}{site}{color}</td></tr>")
+                           f"<td><span style='white-space:nowrap'>{name}{site}</span>{color}</td></tr>")
             more = ""
             if len(points) > self.DELETION_SHOWN:
                 more = (f"<a href='list:{key}' style='text-decoration:none;font-size:11px'>"
@@ -2442,7 +2459,7 @@ class NetworkTab(QWidget):
             unit = "部位" if kind == "phospho" else "遺伝子"
             parts.append(f"<p style='margin:4px 0 2px 0'><b>この遺伝子を壊した株の{title}</b>"
                          f"（{ref(meta['source'], meta['pmid'])}）: 上がった{unit} {up}・下がった{unit} {len(pts) - up} "
-                         f"<a href='kocolor:{orf}:{color_kind}' style='text-decoration:none'>地図で色分け</a></p>")
+                         f"<a href='kocolor:{orf}:{color_kind}' style='text-decoration:none;white-space:nowrap'>地図で色分け</a></p>")
             if pts:
                 parts.append(rows(pts, False, f"ko-own-{kind}"))
         # この遺伝子が変わった破壊株
@@ -2456,16 +2473,14 @@ class NetworkTab(QWidget):
             parts.append(rows(pts, True, f"ko-in-{kind}"))
         if len(parts) == 1:
             return ""
-        parts.append("<p style='margin:2px 0;color:#777;font-size:11px'>mRNA は p &lt; 0.05 かつ 1.4 倍以上の変化だけ。"
-                     "リン酸化は論文が変化として報告した部位だけ</p>")
-        return "".join(parts)
+        return "".join(parts)   # 何を載せたか（mRNA は p < 0.05 かつ 1.4 倍以上など）は Help に書く
 
     @staticmethod
     def _value_html(v: float | None, note: str = "") -> str:
         """log2 の比を、地図と同じ色（赤＝増える、青＝減る）の数字で出す。"""
         if v is None:
             return "<span style='color:#bbb'>–</span>"
-        color = "#c62828" if v >= 0.58 else "#1565c0" if v <= -0.58 else "#555"
+        color = "#c62828" if v >= 0.58 else "#1565c0" if v <= -0.58 else NetworkTab._tone("#555", "#aaa")
         weight = "bold" if abs(v) >= 1 else "normal"
         extra = f" <span style='color:#777;font-size:11px'>{html.escape(note)}</span>" if note else ""
         return f"<span style='color:{color};font-weight:{weight}'>{v:+.2f}</span>{extra}"
@@ -2473,7 +2488,7 @@ class NetworkTab(QWidget):
     def _data_html(self, orf: str) -> str:
         """条件ごとの変化（data/expression.db）: 条件ごとの mRNA・リン酸化・タンパク質量のまとめの表。
         条件の名前を押すと、その下に測定ごとの値と出典（論文へのリンク）が開く（もう一度押すと閉じる）。
-        測定がない条件は、名前を灰色にして開けないようにする。色分けで選んでいる条件は太字。
+        測定がない条件は、名前を灰色にして開けないようにする。
         リン酸化が測られていても p < 0.05 の部位がない条件は、0 ではなく n.s. と出す（変わらなかったとは言えないため）。"""
         if not orf or not expression.available():
             return ""
@@ -2481,7 +2496,6 @@ class NetworkTab(QWidget):
         if not summary:
             return ""
         labels = conditions.labels()
-        cur = self.data_condition() if self.data_kind() else None
         kinds = [k for k in expression.KINDS if any(k in v for v in summary.values())]
         # 開いた文献の欄は表の外に出す（表の中に入れると、欄の長い行が列の幅を押し広げて条件名が折り返す）。
         # 表は開いた条件のところで区切るので、値の列の幅を固定して、区切った表どうしの列をそろえる
@@ -2500,13 +2514,11 @@ class NetworkTab(QWidget):
                 continue
             mine = [x for x in listed if key in x.conditions.split(";")]
             is_open = bool(mine) and key in self._st.open_conds
-            name = self._two_lines(labels.get(key, key), name_width, bold=key == cur)
-            if key == cur:
-                name = f"<b>{name}</b>"
+            name = self._two_lines(labels.get(key, key), name_width)
             if mine:
                 link = f"<a href='cond:{html.escape(key)}' style='text-decoration:none'>{'▾' if is_open else '▸'} {name}</a>"
             else:   # 測定がない: 灰色で、開けない（▸ の分の幅は空けて名前の位置をそろえる）
-                link = f"<span style='color:#999'><span style='color:transparent'>▸</span> {name}</span>"
+                link = f"<span style='color:#9e9e9e'><span style='color:transparent'>▸</span> {name}</span>"
             cells = "".join(col(widths[k], self._summary_cell(k, summary[key].get(k))) for k in kinds)
             rows.append(f"<tr><td style='white-space:nowrap'>{link}</td>{cells}</tr>")
             if is_open:
@@ -2542,10 +2554,14 @@ class NetworkTab(QWidget):
         return f"{html.escape(first.strip())}<br><span style='color:transparent'>▸</span> {html.escape(second)}"
 
     @staticmethod
-    def _literature_bg() -> str:
+    def _tone(light: str, dark: str) -> str:
+        """説明欄の色: 明るい画面なら light、暗い画面（ダークモード）なら dark。"""
+        return dark if QApplication.palette().base().color().lightness() < 128 else light
+
+    @classmethod
+    def _literature_bg(cls) -> str:
         """条件の測定の一覧（開いた文献の欄）の背景色。明るい画面では淡い青、暗い画面では暗い青。"""
-        dark = QApplication.palette().base().color().lightness() < 128
-        return "#1f2b36" if dark else "#eaf1f8"
+        return cls._tone("#eaf1f8", "#1f2b36")
 
     def _summary_cell(self, kind: str, value: tuple[float, str] | None) -> str:
         """まとめの表の 1 つの値。リン酸化で、測られているが p < 0.05 の部位がない（値 0・部位なし）なら n.s.。"""
@@ -2632,7 +2648,8 @@ class NetworkTab(QWidget):
         if pairs:
             gene_link = lambda g: f"<a href='node:{g}'>{html.escape(self.model.names[g])}</a>"   # noqa: E731
             mates = "".join(f"<li>{'・'.join(gene_link(g) for g in self.model.paralogs[n] if g != pid)} "
-                            f"<a href='paralog:{html.escape(n)}' style='color:#777'>根拠</a></li>" for n in pairs)
+                            f"<a href='paralog:{html.escape(n)}' style='color:#888;white-space:nowrap'>根拠</a></li>"
+                            for n in pairs)
             out += f"<h4 style='margin-bottom:2px'>パラログ</h4><ul style='margin-top:0'>{mates}</ul>"
         return out
 
@@ -2645,7 +2662,7 @@ class NetworkTab(QWidget):
             return ""
         names = sorted({model.names[it.source_id if it.source_id != pid else it.target_id] for it in omitted})
         shown = "、".join(names[:6]) + (f" ほか {len(names) - 6} 個" if len(names) > 6 else "")
-        return f"<p style='color:#b26a00'>省いた転写因子どうしの線 {len(omitted)} 本: {html.escape(shown)}</p>"
+        return f"<p style='color:{self._tone('#b26a00', '#f0a040')}'>省いた転写因子どうしの線 {len(omitted)} 本: {html.escape(shown)}</p>"
 
     def _description_html(self, text: str) -> str:
         """説明欄: 英語の説明（原文のまま）。"""
@@ -2661,8 +2678,9 @@ class NetworkTab(QWidget):
         opened = key in self._st.open_lists
         lines = [h for _, h in (items if opened else items[:MAX_LIST])]
         if len(items) > MAX_LIST:
-            lines.append(f"<a href='list:{key}' style='color:#555'>▴ 閉じる</a>" if opened else
-                         f"<a href='list:{key}' style='color:#555'>▸ ほか {len(items) - MAX_LIST} 件を表示</a>")
+            muted = self._tone("#555", "#aaa")
+            lines.append(f"<a href='list:{key}' style='color:{muted}'>▴ 閉じる</a>" if opened else
+                         f"<a href='list:{key}' style='color:{muted}'>▸ ほか {len(items) - MAX_LIST} 件を表示</a>")
         return head + "<br>".join(lines)
 
     def _edge_html(self, iid: int) -> str:
@@ -2682,10 +2700,11 @@ class NetworkTab(QWidget):
         table = "".join(f"<tr><td nowrap style='color:#777;padding-right:8px;vertical-align:top;white-space:nowrap'>{k}</td>"
                         f"<td>{v}</td></tr>" for k, v in rows)
         a, b = it.source.gene_name, it.target.gene_name
-        sgd = (f"<p style='font-size:11px;color:#777'>参照データで確かめる: "
-               f"<a href='https://www.yeastgenome.org/locus/{a}/interaction'>SGD {html.escape(a)} の相互作用</a>・"
-               f"<a href='https://www.yeastgenome.org/locus/{a}/regulation'>{html.escape(a)} の制御</a>・"
-               f"<a href='https://www.yeastgenome.org/locus/{b}/interaction'>SGD {html.escape(b)} の相互作用</a>・"
+        # 参照データのリンクは、リンクの途中で折り返さないよう 1 つずつ改行して並べる
+        sgd = (f"<p style='font-size:11px;color:#888'>参照データで確かめる:<br>"
+               f"<a href='https://www.yeastgenome.org/locus/{a}/interaction'>SGD {html.escape(a)} の相互作用</a><br>"
+               f"<a href='https://www.yeastgenome.org/locus/{a}/regulation'>{html.escape(a)} の制御</a><br>"
+               f"<a href='https://www.yeastgenome.org/locus/{b}/interaction'>SGD {html.escape(b)} の相互作用</a><br>"
                f"<a href='https://www.yeastgenome.org/locus/{b}/regulation'>{html.escape(b)} の制御</a></p>")
         return (f"<h2 style='margin-bottom:2px'><a href='node:{it.source_id}'>{html.escape(a)}</a>"
                 f" → <a href='node:{it.target_id}'>{html.escape(b)}</a></h2>"

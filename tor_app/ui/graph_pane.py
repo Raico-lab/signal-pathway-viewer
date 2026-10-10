@@ -1187,8 +1187,8 @@ class GraphPane(QFrame):
                           "線の計算と描画に時間がかかることがあります。\n表示しますか？", parent=self)
         box.setInformativeText("段数を減らすか、凡例のチェックで転写制御などの種類を隠すと、線を減らせます。")
         show = box.addButton("表示する", QMessageBox.ButtonRole.AcceptRole)
-        cancel = box.addButton("キャンセル", QMessageBox.ButtonRole.RejectRole)
-        box.setDefaultButton(cancel)
+        box.addButton("キャンセル", QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(show)   # Enter で表示する（ブラウザ版の確認と同じ）
         box.exec()
         if box.clickedButton() is show:
             return True

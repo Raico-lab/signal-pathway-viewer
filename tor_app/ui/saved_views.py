@@ -3,16 +3,18 @@
 登録するときに、どの項目を含めるかを選べる。呼び出すと、登録した項目だけを操作中の表示枠（と全体の凡例）に当てはめる。
 遺伝子は名前で保存するので、DB を作り直しても同じ遺伝子に戻せる（DB にない遺伝子は無視する）。
 """
+import html
 import json
 from datetime import datetime
 
 from PyQt6.QtCore import QEvent, Qt
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
                              QMessageBox, QPushButton, QVBoxLayout, QWidget)
 
 from ..db.vocab import type_label
 from ..paths import user_data_dir
 from ..roles import ROLE_INFO
+from . import help_text
 
 SAVE_FILE = user_data_dir() / "saved_views.json"
 
@@ -47,66 +49,105 @@ class SavedViewsPanel(QWidget):
         super().__init__()
         self.tab = tab
         self.views = _load()
+        self._summary_text: str | None = None   # 右側の説明欄に出した登録の中身（選択を外したときに消すため）
+        self._press_on_current = False          # 選んでいる登録をもう一度押したか（押したら選択を外す）
+        self._filtering = False                 # アプリ全体のイベントフィルタを入れているか（選んでいる間だけ）
         layout = QVBoxLayout(self)
-        save_box = QGroupBox("今の表示を登録")
-        save_layout = QVBoxLayout(save_box)
+        layout.addWidget(self._title("登録する項目"))
         self.part_checks: dict[str, QCheckBox] = {}
         for key, (label, desc) in PARTS.items():
             cb = QCheckBox(label)
             cb.setChecked(True)
             cb.setToolTip(desc)
             self.part_checks[key] = cb
-            save_layout.addWidget(cb)
+            layout.addWidget(cb)
+        all_row = QHBoxLayout()
+        for text, on in (("すべて選択", True), ("すべて解除", False)):
+            button = QPushButton(text)
+            button.clicked.connect(lambda _c=False, on=on: self._check_all_parts(on))
+            all_row.addWidget(button)
+        layout.addLayout(all_row)
         name_row = QHBoxLayout()
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("名前 例: TOR1 から MSN2 への経路")
+        self.name_edit.setPlaceholderText("名前")
         self.name_edit.returnPressed.connect(self.save_current)
         save_button = QPushButton("登録")
         save_button.clicked.connect(self.save_current)
         name_row.addWidget(self.name_edit, 1)
         name_row.addWidget(save_button)
-        save_layout.addLayout(name_row)
+        layout.addLayout(name_row)
 
-        list_box = self.list_box = QGroupBox("登録した表示")
-        list_layout = QVBoxLayout(list_box)
+        layout.addSpacing(8)
+        layout.addWidget(self._title("登録した表示"))
         self.list = QListWidget()
         self.list.setMinimumHeight(160)
         self.list.currentItemChanged.connect(lambda *_: self._show_summary())
-        self.list.itemDoubleClicked.connect(lambda _item: self.load_selected())
-        self.summary = QLabel()
-        self.summary.setWordWrap(True)
-        self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.summary.setStyleSheet("color:#37474f;")
+        self.list.itemClicked.connect(self._on_item_clicked)
+        self.list.itemDoubleClicked.connect(self._on_item_double_clicked)
         buttons = QHBoxLayout()
-        load_button = QPushButton("呼び出す")
-        load_button.setToolTip("選んだ表示を、操作中の表示枠に当てはめます。ダブルクリックでも呼び出せます")
-        load_button.clicked.connect(self.load_selected)
-        delete_button = QPushButton("削除")
-        delete_button.clicked.connect(self.delete_selected)
-        buttons.addWidget(load_button)
-        buttons.addWidget(delete_button)
-        # 登録の中身は、呼び出す・削除のボタンの下に出す
-        list_layout.addWidget(self.list)
-        list_layout.addLayout(buttons)
-        list_layout.addWidget(self.summary)
+        self.load_button = QPushButton("呼び出す")
+        self.load_button.setToolTip("選んだ表示を、操作中の表示枠に当てはめます。ダブルクリックでも呼び出せます")
+        self.load_button.clicked.connect(self.load_selected)
+        self.delete_button = QPushButton("削除")
+        self.delete_button.clicked.connect(self.delete_selected)
+        buttons.addWidget(self.load_button)
+        buttons.addWidget(self.delete_button)
+        layout.addWidget(self.list)
+        layout.addLayout(buttons)
 
-        for w in (save_box, list_box):
-            layout.addWidget(w)
         layout.addStretch(1)
         layout.addWidget(tab.help_button("saved"))
         self._refresh_list()
-        # 一覧の外（呼び出す・削除のボタンを除く）や、一覧の空いたところをクリックしたら選択を外す
-        QApplication.instance().installEventFilter(self)
+
+    @staticmethod
+    def _title(text: str) -> QLabel:
+        label = QLabel(text)
+        font = label.font()
+        font.setBold(True)
+        label.setFont(font)
+        return label
+
+    def _check_all_parts(self, on: bool) -> None:
+        for cb in self.part_checks.values():
+            cb.setChecked(on)
+
+    # ================= 選択を外す =================
+    # 一覧の外（呼び出す・削除のボタンと右側の説明欄を除く）や一覧の空いたところを押す、または選んでいる登録を
+    # もう一度押すと、選択を外す。アプリ全体のイベントフィルタは、登録を選んでいる間だけ入れる
+    def _set_filtering(self, on: bool) -> None:
+        if on == self._filtering:
+            return
+        self._filtering = on
+        app = QApplication.instance()
+        if on:
+            app.installEventFilter(self)
+        else:
+            app.removeEventFilter(self)
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.MouseButtonPress and self.list.currentItem() is not None:
-            target = QApplication.widgetAt(event.globalPosition().toPoint())
-            inside = target is not None and (target is self.list_box or self.list_box.isAncestorOf(target))
-            on_empty = target is self.list.viewport() and \
-                self.list.itemAt(self.list.viewport().mapFromGlobal(event.globalPosition().toPoint())) is None
-            if not inside or on_empty:
+            pos = event.globalPosition().toPoint()
+            target = QApplication.widgetAt(pos)
+            viewport = self.list.viewport()
+            keep = [self.list, self.load_button, self.delete_button, self.tab.detail]
+            inside = target is not None and any(target is w or w.isAncestorOf(target) for w in keep)
+            item = self.list.itemAt(viewport.mapFromGlobal(pos)) if target is viewport else None
+            self._press_on_current = item is not None and item is self.list.currentItem()
+            if not inside or (target is viewport and item is None):
                 self.clear_selection()
         return super().eventFilter(obj, event)
+
+    def _on_item_clicked(self, item) -> None:
+        if self._press_on_current and item is self.list.currentItem():
+            self.clear_selection()
+        self._press_on_current = False
+
+    def _on_item_double_clicked(self, item) -> None:
+        # ブラウザ版では 2 回目の押下で選択が外れるので、ダブルクリックした登録を選び直してから呼び出す
+        self._press_on_current = False
+        if self.list.currentItem() is not item:
+            self.list.setCurrentItem(item)
+        self.load_selected()
 
     def clear_selection(self) -> None:
         self.list.clearSelection()
@@ -194,7 +235,9 @@ class SavedViewsPanel(QWidget):
 
         # 注目・拡張・緑の選択（操作中の表示枠）。登録していない項目は今のまま。
         # 注目だけを呼び出すときは、拡張は外す（別の遺伝子に注目したときと同じ）
-        pane.clear_relation()
+        # 経路は、登録に含まれるときだけ消して当てはめ直す（含まれなければ今の経路の表示を保つ）
+        if "relation" in parts:
+            pane.clear_relation()
         state = pane.state()
         if "focus" in parts:
             state.update({k: v for k, v in parts["focus"].items() if k != "trf"})
@@ -219,7 +262,7 @@ class SavedViewsPanel(QWidget):
             tab.set_relation_settings(ids(r.get("genes", [])), r.get("mode", "off"), int(r.get("steps", r.get("lo", 1))),
                                       by_name.get((r.get("anchor") or "").upper()))
         else:
-            tab.apply_relation()
+            tab.apply_relation()   # 今の経路の設定のまま、描き直した地図に出し直す
         tab._save_view()
         tab.statusMessage.emit(f"「{view['name']}」を呼び出しました")
 
@@ -246,7 +289,7 @@ class SavedViewsPanel(QWidget):
 
     def _refresh_list(self, select: str | None = None) -> None:
         self.list.clear()
-        for v in sorted(self.views, key=lambda v: v.get("saved_at", ""), reverse=True):
+        for v in sorted(self.views, key=lambda v: v["name"].casefold()):
             item = QListWidgetItem(v["name"])
             item.setData(Qt.ItemDataRole.UserRole, v["name"])
             item.setToolTip(self._describe(v))
@@ -256,13 +299,30 @@ class SavedViewsPanel(QWidget):
         self._show_summary()
 
     def _show_summary(self) -> None:
+        """選んだ登録の中身を右側の説明欄に出す。選択を外したら、出していた中身を消す。"""
         view = self._selected()
-        self.summary.setText(self._describe(view) if view else "")
+        tab = self.tab
+        self._set_filtering(view is not None)
+        detail = getattr(tab, "detail", None)
+        if detail is None:
+            return
+        if view is None:
+            if self._summary_text is not None and detail.toPlainText() == self._summary_text:
+                tab.clear_detail()
+            self._summary_text = None
+            return
+        lines = self._describe(view).split("\n")
+        body = "".join(f"<li>{html.escape(line)}</li>" for line in lines[1:])
+        tab.selected = None
+        tab._set_controls([])
+        detail.setHtml(help_text._STYLE + f"<h3>{html.escape(view['name'])}</h3>"
+                       f"<p>{html.escape(lines[0])}</p><ul>{body}</ul>")
+        self._summary_text = detail.toPlainText()
 
     @staticmethod
     def _describe(view: dict) -> str:
         parts = view["parts"]
-        lines = [f"登録: {view.get('saved_at', '')}"]
+        lines = [f"登録日: {view.get('saved_at', '') or '不明'}"]
         if "focus" in parts:
             f = parts["focus"]
             lines.append(f"注目: {'、'.join(f.get('focus', [])) or 'なし'}、上流 {f.get('up')}・下流 {f.get('down')} 段")

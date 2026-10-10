@@ -103,6 +103,11 @@ class RowsModel(QAbstractTableModel):
             return value
         if role == Qt.ItemDataRole.BackgroundRole and (index.row(), index.column()) in self.colors:
             return QBrush(QColor(self.colors[(index.row(), index.column())]))
+        if role == Qt.ItemDataRole.ForegroundRole and (index.row(), index.column()) in self.colors:
+            # 色を塗ったマスの文字は、地の明るさで黒か白に（暗い画面の白い文字が明るい地に乗らないように）
+            c = QColor(self.colors[(index.row(), index.column())])
+            light = 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue() > 140
+            return QBrush(QColor("#000000" if light else "#ffffff"))
         return None
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
@@ -167,6 +172,7 @@ class GenePicker(QLineEdit):
         self.chosen = ""
         self.names: dict[str, str] = {}   # 大文字の名前 → 表示の名前
         self.setClearButtonEnabled(True)
+        self.setPlaceholderText("名前で絞り込む")
         self.setFixedWidth(140)
         completer = QCompleter([])
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -238,332 +244,7 @@ class ConditionPicker(QPushButton):
         self.selected: set[str] = set()
 
     def set_all(self, on: bool) -> None:
-        """「条件を全選択」「条件を全解除」。"""
-        self.tree.blockSignals(True)
-        for i in range(self.tree.topLevelItemCount()):
-            self.tree.topLevelItem(i).setCheckState(0, Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
-        self.tree.blockSignals(False)
-        self._on_changed()
-
-    def is_filtering(self) -> bool:
-        return bool(self.off)
-
-    def set_conditions(self, present: set[str]) -> None:
-        """DB の関係に付いている条件だけを群ごとに並べ直す（選んでいたものは残す）。"""
-        groups: dict[str, list] = {}
-        for c in conditions.load():
-            if c.key in present:
-                groups.setdefault(c.group, []).append((c.key, c.label))
-        self.tree.blockSignals(True)
-        self.tree.clear()
-        flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
-        for group, items in groups.items():
-            head = QTreeWidgetItem([group])
-            head.setFlags(flags | Qt.ItemFlag.ItemIsAutoTristate)
-            for key, label in items:
-                item = QTreeWidgetItem([label])
-                item.setFlags(flags)
-                item.setData(0, Qt.ItemDataRole.UserRole, key)
-                item.setCheckState(0, Qt.CheckState.Unchecked if key in self.off else Qt.CheckState.Checked)
-                head.addChild(item)
-            self.tree.addTopLevelItem(head)
-        none = QTreeWidgetItem([conditions.NONE_LABEL])
-        none.setFlags(flags)
-        none.setData(0, Qt.ItemDataRole.UserRole, conditions.NONE_KEY)
-        none.setCheckState(0, Qt.CheckState.Unchecked if conditions.NONE_KEY in self.off else Qt.CheckState.Checked)
-        self.tree.addTopLevelItem(none)
-        self.tree.blockSignals(False)
-        self._on_changed()
-
-    def _on_clicked(self, item, _column) -> None:
-        if item.childCount():
-            item.setExpanded(not item.isExpanded())
-
-    def _on_changed(self, item=None, _column=0) -> None:
-        if item is not None and item.childCount() and item.checkState(0) == Qt.CheckState.Checked:
-            item.setExpanded(True)   # 群にチェックしたら中の小分類を見せる
-        keys, selected = set(), set()
-        for i in range(self.tree.topLevelItemCount()):
-            top = self.tree.topLevelItem(i)
-            for item in [top.child(j) for j in range(top.childCount())] or [top]:
-                key = item.data(0, Qt.ItemDataRole.UserRole)
-                keys.add(key)
-                if item.checkState(0) == Qt.CheckState.Checked:
-                    selected.add(key)
-        names = conditions.labels()
-        first = sorted(names.get(k, k) for k in selected)[:1]
-        self.setText("条件: すべて" if selected == keys else "条件: なし" if not selected else
-                     f"条件: {first[0]}" + (f" ほか {len(selected) - 1}" if len(selected) > 1 else ""))
-        off = keys - selected
-        if (off, selected) != (self.off, self.selected):
-            self.keys, self.off, self.selected = keys, off, selected
-            self.changed.emit()
-
-
-class IdFilterProxy(QSortFilterProxyModel):
-    """検索ボックスの文字に加えて、allowed（行の id の集合）に入る行だけを残す（None なら絞り込まない）。"""
-
-    def __init__(self):
-        super().__init__()
-        self.allowed: set[int] | None = None
-
-    def set_allowed(self, allowed: set[int] | None) -> None:
-        self.allowed = allowed
-        self.invalidateFilter()
-
-    def filterAcceptsRow(self, row, parent):
-        return self.allowed is None or self.sourceModel().ids[row] in self.allowed
-
-    def sort(self, column, order=Qt.SortOrder.AscendingOrder):
-        # 並べ替えは元の表（RowsModel.sort）で行い、ここでは元の並びのまま使う
-        self.sourceModel().sort(column, order)
-
-
-class DeselectTable(QTableView):
-    """行のない所をクリックすると選択を外す表。"""
-
-    def mousePressEvent(self, event):
-        if not self.indexAt(event.position().toPoint()).isValid():
-            self.clearSelection()
-        super().mousePressEvent(event)
-
-
-class TablePage(QWidget):
-    """件数・操作ボタン＋絞り込み＋表の 1 ページ。"""
-
-    def __init__(self, headers: list[str], parent=None):
-        super().__init__(parent)
-        self.model = RowsModel(headers)
-        self.proxy = IdFilterProxy()
-        self.proxy.setSourceModel(self.model)
-        self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.proxy.setFilterKeyColumn(-1)
-        self.proxy.setSortRole(Qt.ItemDataRole.UserRole)
-        self.count = QLabel()
-        self.table = DeselectTable()
-        self.table.setModel(self.proxy)
-        self.table.setSortingEnabled(True)
-        self.table.sortByColumn(0, Qt.SortOrder.AscendingOrder)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setAlternatingRowColors(True)
-        self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.help_button = QPushButton("Help")
-        # 1 行に: 左に表ごとの絞り込み（DatabaseTab が中身を置く）、右端に件数と Help
-        self.filter_row = QHBoxLayout()
-        top = QHBoxLayout()
-        top.addLayout(self.filter_row)
-        top.addStretch(1)
-        top.addWidget(self.count)
-        top.addWidget(self.help_button)
-        layout = QVBoxLayout(self)
-        layout.addLayout(top)
-        layout.addWidget(self.table)
-        self.proxy.rowsInserted.connect(self._update_count)
-        self.proxy.rowsRemoved.connect(self._update_count)   # 絞り込みで行が減ったとき
-        self.proxy.modelReset.connect(self._update_count)
-        self.proxy.layoutChanged.connect(self._update_count)
-
-    def _update_count(self, *_):
-        self.count.setText(f"{self.proxy.rowCount()} / {self.model.rowCount()} 件")
-
-    def shown_ids(self) -> set[int]:
-        """絞り込みで残っている行の id。"""
-        return {self.model.ids[self.proxy.mapToSource(self.proxy.index(r, 0)).row()] for r in range(self.proxy.rowCount())}
-
-    def set_rows(self, ids, rows, colors=None):
-        self.beginResetModel()
-        self.ids, self.rows, self.colors = list(ids), rows, colors or {}
-        if self._sort:
-            self._reorder(*self._sort)
-        self.endResetModel()
-
-    @staticmethod
-    def _key(value):
-        """並べ替えの鍵: 数は数として、文字は大文字・小文字を区別せずに。空は最後（昇順のとき）。"""
-        if value is None or value == "":
-            return (2, 0, "")
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            return (0, value, "")
-        return (1, 0, str(value).lower())
-
-    def _reorder(self, column: int, order: Qt.SortOrder) -> list[int]:
-        """行を並べ替え、元の行番号の並び（新しい行 → 元の行）を返す。"""
-        perm = sorted(range(len(self.rows)), key=lambda r: self._key(self.rows[r][column]),
-                      reverse=order == Qt.SortOrder.DescendingOrder)
-        self.rows = [self.rows[r] for r in perm]
-        self.ids = [self.ids[r] for r in perm]
-        new_of = {old: new for new, old in enumerate(perm)}
-        self.colors = {(new_of[r], c): v for (r, c), v in self.colors.items()}
-        return perm
-
-    def sort(self, column, order=Qt.SortOrder.AscendingOrder):
-        """Python で 1 回だけ並べ替える（QSortFilterProxyModel に任せると、比べるたびに Python を呼んで遅い）。"""
-        if column < 0 or not self.rows:
-            self._sort = (column, order) if column >= 0 else None
-            return
-        self._sort = (column, order)
-        with busy(f"sort:{id(self)}:{column}"):
-            self.layoutAboutToBeChanged.emit()
-            old = self.persistentIndexList()
-            perm = self._reorder(column, order)
-            new_of = {o: n for n, o in enumerate(perm)}
-            self.changePersistentIndexList(old, [self.index(new_of[i.row()], i.column()) for i in old])
-            self.layoutChanged.emit()
-
-    def rowCount(self, parent=QModelIndex()):
-        return len(self.rows)
-
-    def columnCount(self, parent=QModelIndex()):
-        return len(self.headers)
-
-    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        value = self.rows[index.row()][index.column()]
-        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole):
-            return "" if value is None else str(value)
-        if role == Qt.ItemDataRole.UserRole:  # 並べ替え用の生の値
-            return value
-        if role == Qt.ItemDataRole.BackgroundRole and (index.row(), index.column()) in self.colors:
-            return QBrush(QColor(self.colors[(index.row(), index.column())]))
-        return None
-
-    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return self.headers[section]
-        return None
-
-
-class PassOutsideClick(QObject):
-    """プルダウン（QCompleter の一覧・QMenu）が開いているときに、その外を押したら、プルダウンを閉じてから、押した所の
-    部品にもう一度クリックを届ける。macOS では、外の押下はプルダウンを閉じるだけで下の部品に届かず、
-    「入力中に『条件』を押しても開かない」などになるため。"""
-
-    def __init__(self, owner: QWidget, popup):
-        """owner: この仕組みを持つ部品（消えるまで働く）。popup: プルダウンを返す関数（QCompleter は一覧を作り直すことがある）。"""
-        super().__init__(owner)
-        self._popup = popup
-        # QCompleter は一覧に自分の目印を付けて押下を先に処理するので、アプリ全体で先に見る（開いているときだけ働く）
-        QApplication.instance().installEventFilter(self)
-
-    @property
-    def popup(self) -> QWidget:
-        return self._popup()
-
-    def eventFilter(self, obj, event):
-        if (event.type() == event.Type.MouseButtonPress and QApplication.activePopupWidget() is not None
-                and QApplication.activePopupWidget() is self.popup):
-            pos = event.globalPosition().toPoint()
-            if not self.popup.rect().contains(self.popup.mapFromGlobal(pos)):
-                self.popup.hide()
-                target = QApplication.widgetAt(pos)
-                # プルダウンを開いた部品そのもの（「条件」のボタン）を押したときは、閉じるだけ
-                opener = self.popup.parentWidget()
-                if (target is not None and target.window() is not self.popup.window()
-                        and not (isinstance(self.popup, QMenu) and opener is not None
-                                 and (target is opener or opener.isAncestorOf(target)))):
-                    QTimer.singleShot(0, lambda: self._click(target, pos))
-                return True
-        return super().eventFilter(obj, event)
-
-    @staticmethod
-    def _click(target: QWidget, pos) -> None:
-        # プルダウン付きのボタン（「条件」）は、押して離すと開く前に戻ってしまうので、直接開く
-        button = target if isinstance(target, QPushButton) else None
-        if button is not None and button.menu() is not None:
-            button.showMenu()
-            return
-        local = QPointF(target.mapFromGlobal(pos))
-        for kind in (QEvent.Type.MouseButtonPress, QEvent.Type.MouseButtonRelease):
-            QApplication.sendEvent(target, QMouseEvent(kind, local, QPointF(pos), Qt.MouseButton.LeftButton,
-                                                       Qt.MouseButton.LeftButton if kind == QEvent.Type.MouseButtonPress
-                                                       else Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier))
-
-
-class GenePicker(QLineEdit):
-    """遺伝子名の入力窓。打つと名前を含む候補がプルダウンで出て、選んだ（または候補どおりに打って Enter した）
-    名前を chosen にする。打ち直して選んだ名前と違ったら chosen は空に戻る（絞り込まない）。"""
-    chosenChanged = pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-        self.chosen = ""
-        self.names: dict[str, str] = {}   # 大文字の名前 → 表示の名前
-        self.setClearButtonEnabled(True)
-        self.setFixedWidth(140)
-        completer = QCompleter([])
-        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchFlag.MatchContains)
-        completer.setMaxVisibleItems(15)
-        completer.activated[str].connect(self._choose)
-        self.setCompleter(completer)
-        self._pass_click = PassOutsideClick(self, lambda: self.completer().popup())
-        self.returnPressed.connect(lambda: self._choose(self.text()))
-        self.textChanged.connect(self._edited)
-
-    def set_names(self, names: list[str]) -> None:
-        self.names = {n.upper(): n for n in names}
-        self.completer().model().setStringList(names)
-        if self.chosen and self.chosen.upper() not in self.names:
-            self._set("")
-
-    def _choose(self, text: str) -> None:
-        name = self.names.get(text.strip().upper())
-        if name:
-            if self.text() != name:
-                self.setText(name)
-            self._set(name)
-
-    def mousePressEvent(self, event):
-        # 押したら候補を出す（打たなくても選べるように。空なら全部、文字があればそれを含む名前）
-        super().mousePressEvent(event)
-        if event.button() == Qt.MouseButton.LeftButton and not self.completer().popup().isVisible():
-            QTimer.singleShot(0, self._show_candidates)
-
-    def _show_candidates(self) -> None:
-        completer = self.completer()
-        completer.setCompletionPrefix("" if self.text() == self.chosen else self.text())
-        completer.complete()
-
-    def _edited(self, text: str) -> None:
-        if self.chosen and text != self.chosen:
-            self._set("")
-
-    def _set(self, name: str) -> None:
-        if name != self.chosen:
-            self.chosen = name
-            self.chosenChanged.emit()
-
-
-class ConditionPicker(QPushButton):
-    """制御関係の「条件」の絞り込み: 押すとプルダウンが開き、条件の群（大分類）が並ぶ。群を押すとその小分類が開き、
-    チェックは群でも小分類でも付けられる（群のチェックで中の小分類をまとめて切り替え）。最初はすべてチェック（絞り込まない）。
-    チェックした条件を 1 つでも持つ関係だけを残す（すべて外せば 0 件）。"""
-    changed = pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-        self.setText("条件")
-        self.setMinimumWidth(220)   # 「条件: 浸透圧ストレス ほか 12」などが切れないように
-        self.tree = QTreeWidget()
-        self.tree.setHeaderHidden(True)
-        self.tree.setMinimumSize(340, 420)
-        self.tree.itemChanged.connect(self._on_changed)
-        self.tree.itemClicked.connect(self._on_clicked)
-        menu = QMenu(self)
-        action = QWidgetAction(menu)
-        action.setDefaultWidget(self.tree)
-        menu.addAction(action)
-        self.setMenu(menu)
-        self._pass_click = PassOutsideClick(self, self.menu)
-        self.keys: set[str] = set()       # 並んでいる条件
-        self.off: set[str] = set()        # チェックを外した条件（DB を読み直しても残す。新しく出た条件はチェック済み）
-        self.selected: set[str] = set()
-
-    def set_all(self, on: bool) -> None:
-        """「条件を全選択」「条件を全解除」。"""
+        """「すべて選択」「すべて解除」。"""
         self.tree.blockSignals(True)
         for i in range(self.tree.topLevelItemCount()):
             self.tree.topLevelItem(i).setCheckState(0, Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
@@ -740,18 +421,17 @@ class DatabaseTab(QWidget):
         left_layout.addWidget(self.tabs)
         left_layout.addLayout(bottom)
 
-        # 右側の説明欄: 最初は使い方。表の行を選ぶとその遺伝子・制御関係・カテゴリの説明（各表の右上の Help で使い方に戻る）
+        # 右側の説明欄: 最初は空。表の行を選ぶとその遺伝子・制御関係・カテゴリの説明（各表の右上の Help で使い方に戻る）
         self.network = None   # 説明欄の中身を地図の説明欄と同じ関数で作るのに使う（MainWindow がつなぐ。set_network）
         self.help_view = QTextBrowser()
         self.help_view.setMinimumWidth(240)
         self.help_view.setOpenLinks(False)
         self.help_view.anchorClicked.connect(lambda url: self._open_link(url.toString()))
-        self.help_view.setHtml(help_text.DATABASE)
         WidthWatcher(self.help_view).changed.connect(
             lambda: self._current and self._current[0] == "node" and self._refresh_detail())
         self.detail_state = DetailState()   # 説明欄の開閉（一覧・条件の測定）。中身は地図の説明欄と共通
-        self._current = None   # 説明欄に出している (種類, キー)。使い方を出しているときは None
-        # 説明欄の履歴（◀ ▶。地図の説明欄と同じ）。使い方は (None, None) として入れる
+        self._current = None   # 説明欄に出している (種類, キー)。空・使い方を出しているときは None
+        # 説明欄の履歴（◀ ▶。地図の説明欄と同じ）。空は (None, None)、使い方は ("usage", None) として入れる
         self._hist: list[tuple] = [(None, None)]
         self._hist_pos = 0
         self._hist_nav = False
@@ -792,6 +472,8 @@ class DatabaseTab(QWidget):
             page.table.selectionModel().selectionChanged.connect(
                 lambda *_a, page=page, kind=kind: self._show_row(page, kind))
         self.export_button.clicked.connect(self.export_csv)
+        # カテゴリの表は CSV に書き出せないので、そのタブではボタンを押せなくする
+        self.tabs.currentChanged.connect(lambda i: self.export_button.setEnabled(i != 2))
 
     # ---- 絞り込み ----
     def _build_filters(self) -> None:
@@ -821,8 +503,9 @@ class DatabaseTab(QWidget):
             row.addWidget(QLabel(label))
             row.addWidget(w)
         row.addWidget(self.rel_conditions)
-        for text, on in (("条件を全解除", False), ("条件を全選択", True)):
+        for text, on in (("すべて解除", False), ("すべて選択", True)):
             button = QPushButton(text)
+            button.setToolTip(f"条件を{text}")
             button.clicked.connect(lambda _=False, on=on: self.rel_conditions.set_all(on))
             row.addWidget(button)
         self.rel_source.chosenChanged.connect(self._filter_interactions)
@@ -831,14 +514,14 @@ class DatabaseTab(QWidget):
 
         # カテゴリ自体の名前（複合体・パラログの組の名前）でも絞り込む。打つたびに、名前にその文字を含むものだけを残す
         self.cat_name = QLineEdit()
-        self.cat_name.setPlaceholderText("例: TORC1")
+        self.cat_name.setPlaceholderText("名前で絞り込む")
         self.cat_name.setClearButtonEnabled(True)
         self.cat_name.setFixedWidth(180)
         self.cat_gene = GenePicker()
         row = self.categories_page.filter_row
-        for label, w in (("名前", self.cat_name), ("遺伝子", self.cat_gene)):
-            row.addWidget(QLabel(label))
-            row.addWidget(w)
+        row.addWidget(self.cat_name)
+        row.addWidget(QLabel("遺伝子"))
+        row.addWidget(self.cat_gene)
         self.cat_name.textChanged.connect(self._filter_categories)
         self.cat_gene.chosenChanged.connect(self._filter_categories)
 
@@ -914,10 +597,10 @@ class DatabaseTab(QWidget):
 
     # ---- 右側の説明欄 ----
     def _show_row(self, page: "TablePage", kind: str) -> None:
-        """選んだ行の説明を出す（選択が外れたら使い方に戻す）。"""
+        """選んだ行の説明を出す（選択が外れたら空に戻す）。"""
         rows = page.table.selectionModel().selectedRows()
         if not rows:
-            self.show_help()
+            self.show_blank()
             return
         current = page.table.currentIndex()
         index = current if current.isValid() and page.table.selectionModel().isRowSelected(current.row()) else rows[0]
@@ -929,10 +612,15 @@ class DatabaseTab(QWidget):
             page.table.clearSelection()
         super().mousePressEvent(event)
 
+    def show_blank(self) -> None:
+        self._current = None
+        self.help_view.setHtml("")
+        self._push_hist(None, None)
+
     def show_help(self) -> None:
         self._current = None
         self.help_view.setHtml(help_text.DATABASE)
-        self._push_hist(None, None)
+        self._push_hist("usage", None)
 
     def show_detail_help(self) -> None:
         """説明欄の一番下の Help: 今の説明の見方を新しいページとして出す。何も出していなければ表の使い方。"""
@@ -990,6 +678,8 @@ class DatabaseTab(QWidget):
         self._hist_nav = True
         try:
             if kind is None:
+                self.show_blank()
+            elif kind == "usage":
                 self.show_help()
             else:
                 self.show_detail(kind, key)
@@ -1057,12 +747,12 @@ class DatabaseTab(QWidget):
                     f"{html.escape(c.source)} {html.escape(c.ref)}</a>")
             return (f"<h2 style='margin-bottom:2px'>{html.escape(c.name)}</h2><p>{link}</p>"
                     f"<h4>所属する遺伝子 ({len(members)})</h4>"
-                    + (f"<ul style='margin-top:0'>{items}</ul>" if items else "<span style='color:#999'>なし</span>")
+                    + (f"<ul style='margin-top:0'>{items}</ul>" if items else "<span style='color:#888'>なし</span>")
                     + (f"<h4 style='margin-bottom:2px'>説明</h4>{self._desc_html(c.description)}" if c.description else ""))
         swatch = f"<span style='background:{html.escape(c.color or '')}'>&nbsp;&nbsp;&nbsp;&nbsp;</span> {html.escape(c.color or '')}"
         return (f"<h2 style='margin-bottom:2px'>{html.escape(c.name)}{' 複合体' if c.is_complex and not c.name.endswith('複合体') else ''}</h2>"
                 f"<p>色: {swatch}</p><h4>所属する遺伝子 ({len(members)})</h4>"
-                + (f"<ul style='margin-top:0'>{items}</ul>" if items else "<span style='color:#999'>なし</span>")
+                + (f"<ul style='margin-top:0'>{items}</ul>" if items else "<span style='color:#888'>なし</span>")
                 + (self._complex_about(c.name, {p.gene_name.upper() for p in members}) if c.is_complex else ""))
 
     def _complex_about(self, name: str, genes: set[str]) -> str:
@@ -1082,7 +772,7 @@ class DatabaseTab(QWidget):
                 desc = ""   # 型違い（TORC1 の TOR1 型・TOR2 型など）で同じ説明は 1 度だけ出す
             seen.add(desc)
             parts.append(f"<p style='margin-bottom:2px'><a href='https://www.ebi.ac.uk/complexportal/complex/{ac}'>"
-                         f"{html.escape(title)}</a> <span style='color:#777'>({'・'.join(sorted(members))})</span></p>"
+                         f"{html.escape(title)}</a> <span style='color:#888'>({'・'.join(sorted(members))})</span></p>"
                          + self._desc_html(desc))
         return ("<h4 style='margin-bottom:2px'>複合体の説明（Complex Portal）</h4>" + "".join(parts)) if parts else ""
 
@@ -1134,8 +824,6 @@ class DatabaseTab(QWidget):
         self._cat_members = {c.id: sorted(by_frame.get(c.name, []) if not c.source else
                                           [gene_names[g] for g in extra.get(c.id, []) if g in gene_names])
                              for c in categories}
-        # 手作業の区分を先に、Complex Portal・パラログをその後に並べる（列見出しで並べ替えもできる）
-        categories = sorted(categories, key=lambda c: (bool(c.source), c.name.lower()))
         self._categories = categories
         self.cat_gene.set_names(sorted({g for genes in self._cat_members.values() for g in genes}))
         self.categories_page.set_rows(
@@ -1150,8 +838,7 @@ class DatabaseTab(QWidget):
     # ---- CSV ----
     def export_csv(self) -> None:
         index = self.tabs.currentIndex()
-        if index == 2:
-            QMessageBox.information(self, "エクスポート", "遺伝子または制御関係のタブを選んでください。")
+        if index == 2:   # カテゴリのタブではボタンを押せない
             return
         page = self.proteins_page if index == 0 else self.interactions_page
         ids = page.shown_ids() if page.proxy.rowCount() < page.model.rowCount() else None

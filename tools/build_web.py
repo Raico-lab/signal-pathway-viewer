@@ -68,12 +68,24 @@ def build_app_zip(dest: Path) -> None:
                 zf.write(path, f"data/{path.name}")
 
 
+def _bust(html: str, folder: Path, names) -> str:
+    """html の中の names への参照に、中身から作った ?v= を付ける。"""
+    for name in names:
+        tag = hashlib.sha256((folder / name).read_bytes()).hexdigest()[:10]
+        for attr in ("src", "href"):
+            html = html.replace(f'{attr}="{name}"', f'{attr}="{name}?v={tag}"')
+    return html
+
+
 def build(out: Path = OUT) -> dict:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir()
     for name in ("index.html", "boot.js", "qt.css"):
         shutil.copy2(WEBAPP / name, out / name)
+    # 読み込みの画面の JS・CSS も、中身が変わったら取り直させる
+    index = (out / "index.html").read_text(encoding="utf-8")
+    (out / "index.html").write_text(_bust(index, out, ("boot.js", "qt.css")), encoding="utf-8")
     # GPLv3 の本文・ほかの部品とデータの利用条件も置く（公開先の一番上。ソースの場所は「このアプリについて」で案内する）
     for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "DATA_LICENSES.md"):
         shutil.copy2(ROOT / name, out / name)
@@ -93,12 +105,9 @@ def build(out: Path = OUT) -> dict:
     html = (web / "network.html").read_text(encoding="utf-8")
     html = html.replace("qrc:///qtwebchannel/qwebchannel.js", "qwebchannel.js")
     # 地図のページの JS・CSS は、中身が変わったら取り直させる（ブラウザが古いものを覚えていると、Python 側と食い違う）
-    for name in ("network.js", "router.js", "network.css"):
-        tag = hashlib.sha256((web / name).read_bytes()).hexdigest()[:10]
-        for attr in ("src", "href"):
-            html = html.replace(f'{attr}="{name}"', f'{attr}="{name}?v={tag}"')
-    (web / "network.html").write_text(html, encoding="utf-8")
     shutil.copy2(WEBAPP / "qwebchannel.js", web / "qwebchannel.js")
+    html = _bust(html, web, ("network.js", "router.js", "network.css", "qwebchannel.js"))
+    (web / "network.html").write_text(html, encoding="utf-8")
     (out / ".nojekyll").write_text("")
 
     digest = hashlib.sha256()

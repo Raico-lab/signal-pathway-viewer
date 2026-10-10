@@ -7,7 +7,7 @@ from . import complex_groups, conditions, confidence
 from .db import Category, Interaction, Protein
 from .db.vocab import (FEEDBACK, INTERACTION_TYPES, NOT_SIGNAL_FLOW, PARALOG_COLOR, PARALOG_SOURCE, resolve_effect,
                        type_label)
-from .roles import NO_LEVEL_COLOR, ROLE_INFO, classify, level_color, level_label
+from .roles import ROLE_INFO, classify
 from .subgraph import Adjacency, Subgraph
 
 UNKNOWN_COLOR = "#90a4ae"
@@ -241,13 +241,6 @@ class PathwayModel:
                                                             self.names)
         return self._layout_order[known_only]
 
-    def max_level(self, known_only: bool) -> int:
-        return max(self.levels(known_only).values(), default=0)
-
-    def _level_color(self, pid: int, known_only: bool) -> str:
-        level = self.levels(known_only).get(pid)
-        return NO_LEVEL_COLOR if level is None else level_color(level, self.max_level(known_only))
-
     def elements(self, sub: Subgraph, known_only: bool = False) -> list[dict]:
         elements = []
         frame = self.frames(sub)
@@ -288,7 +281,6 @@ class PathwayModel:
                 "color": self.category_color(p.complex_category),
                 "role": self.roles[pid],
                 "roleColor": ROLE_INFO[self.roles[pid]][1],
-                "levelColor": self._level_color(pid, known_only),
                 "level": self.levels(known_only).get(pid),
                 "order": self.layout_order(known_only)[pid],
                 "depth": sub.down_dist.get(pid, 0),
@@ -375,20 +367,11 @@ class PathwayModel:
         used_types = sorted({it.interaction_type for it in shown},
                             key=lambda t: list(INTERACTION_TYPES).index(t) if t in INTERACTION_TYPES else 99)
         used_categories = {self.proteins[n].complex_category for n in sub.nodes}
-        levels = self.levels(known_only)
-        top = self.max_level(known_only)
-        shown_levels = {levels.get(n) for n in sub.nodes}
         roles = [key for key in ROLE_INFO if any(self.roles[n] == key for n in sub.nodes)]
         return {
             "categories": [{"name": c.name, "color": c.color, "isComplex": c.is_complex}
                            for c in self.categories.values() if c.name in used_categories],
             "roles": [{"key": k, "name": ROLE_INFO[k][0], "color": ROLE_INFO[k][1]} for k in roles],
-            # 全体の階層をすべて並べ、今の表示に出ているものに印を付ける
-            "levels": [{"name": level_label(lv, top), "color": level_color(lv, top), "shown": lv in shown_levels}
-                       for lv in range(top + 1)]
-                      + ([{"name": "階層なし", "color": NO_LEVEL_COLOR, "shown": True}]
-                         if None in shown_levels else []),
-            "maxLevel": top + 1,
             # DB にあるすべての種類を並べ、今の表示に出ていないものは薄く表示する（表示する前に絞り込めるように）
             "types": _type_legend(self._all_types(), set(used_types)),
         }
