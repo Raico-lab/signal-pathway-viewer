@@ -233,6 +233,7 @@ class QListWidget(QAbstractItemView):
         self._items: list = []
         self._current = None
         self._selected: list = []
+        self._anchor = None   # Shift で範囲を選ぶときの起点
         super().__init__(parent)
 
     def _build(self):
@@ -246,6 +247,39 @@ class QListWidget(QAbstractItemView):
         _dom.listen(self, self._rows, "mousedown", lambda ev: self._dispatch(ev, self._on_press))
         _dom.listen(self, self._rows, "click", lambda ev: self._dispatch(ev, self._on_click))
         _dom.listen(self, self._rows, "dblclick", lambda ev: self._dispatch(ev, self._on_dblclick))
+        self._view.tabIndex = 0
+        _dom.listen(self, self._view, "keydown", self._on_key)
+
+    def _on_key(self, ev):
+        """↑↓ で今の項目を動かす（Qt と同じく、選び方に合わせて選択も動かす。ExtendedSelection の Shift は範囲を広げる）。"""
+        key = str(ev.key)
+        if key not in ("ArrowDown", "ArrowUp") or ev.altKey or ev.metaKey or ev.ctrlKey:
+            return
+        items = [it for it in self._items if not it._hidden and int(it._flags) & int(Qt.ItemFlag.ItemIsEnabled)]
+        if not items:
+            return
+        ev.preventDefault()
+        cur = self._current if self._current in items else None
+        i = items.index(cur) if cur is not None else -1
+        target = items[min(len(items) - 1, i + 1) if key == "ArrowDown" else max(0, i - 1)]
+        mode = self.selectionMode()
+        Mode = QAbstractItemView.SelectionMode
+        if mode in (Mode.NoSelection, Mode.MultiSelection):
+            self._set_current(target, select=False)   # MultiSelection も Qt と同じく選択は変えない
+        elif ev.shiftKey and mode in (Mode.ExtendedSelection, Mode.ContiguousSelection):
+            anchor = self._anchor if self._anchor in items else (cur or target)
+            a, b = sorted((items.index(anchor), items.index(target)))
+            old = list(self._selected)
+            self._selected = [it for it in items[a:b + 1] if int(it._flags) & int(Qt.ItemFlag.ItemIsSelectable)]
+            for it in old + self._selected:
+                if it._el is not None:
+                    it._el.classList.toggle("selected", it in self._selected)
+            if old != self._selected:
+                self.itemSelectionChanged.emit()
+            self._set_current(target, select=False)
+            self._anchor = anchor
+        else:
+            self._set_current(target)
 
     def _dispatch(self, ev, handler):
         e = ev.target
@@ -319,6 +353,7 @@ class QListWidget(QAbstractItemView):
         if self._extend_mode() and (ev.metaKey or ev.ctrlKey):
             self._set_selected(item, item not in self._selected)
             self._set_current(item, select=False)
+            self._anchor = item
         elif self._extend_mode() and ev.shiftKey and self._current in self._items and item is not self._current:
             # Shift: 今の項目から押した項目までを選ぶ（Qt の ExtendedSelection と同じ）。今の項目は動かさない
             ev.preventDefault()   # 文字の範囲選択にしない
@@ -361,6 +396,7 @@ class QListWidget(QAbstractItemView):
     def _set_current(self, item, select=True):
         prev = self._current
         if select:
+            self._anchor = item
             old = list(self._selected)
             self._selected = [item] if item is not None else []
             for it in old + self._selected:
@@ -375,7 +411,7 @@ class QListWidget(QAbstractItemView):
             if it is not None and it._el is not None:
                 it._el.classList.toggle("current", it is self._current)
         if item is not None and item._el is not None:
-            item._el.scrollIntoView(_block_nearest())
+            _scroll_into(self._view, item._el)
         self.currentItemChanged.emit(item, prev)
         self.currentRowChanged.emit(self.row(item) if item is not None else -1)
         self.currentTextChanged.emit(item.text() if item is not None else "")
@@ -467,13 +503,13 @@ class QListWidget(QAbstractItemView):
 
     def scrollToItem(self, item, *_a):
         if item is not None and item._el is not None:
-            item._el.scrollIntoView(_block_nearest())
+            _scroll_into(self._view, item._el)
 
     def sizeHintForRow(self, row) -> int:
         it = self.item(row) or (self._items[0] if self._items else None)
         if it is not None and it._el is not None and it._el.offsetHeight:
             return int(it._el.offsetHeight)
-        return 20
+        return 22   # 見えていないとき: 行の高さ（qt.css の .q-item は min-height 21px）より少し大きめにして、最後の行を切らない
 
     def sizeHintForColumn(self, col) -> int:
         fm = QFontMetrics()
@@ -492,10 +528,19 @@ class QListWidget(QAbstractItemView):
         pass
 
 
-def _block_nearest():
-    opts = js.Object.new()
-    opts.block = "nearest"
-    return opts
+def _scroll_into(view, e):
+    """e が見えるよう view（e を中に持つ、縦に流れる要素）の scrollTop だけを動かす。
+    scrollIntoView は外側の overflow:hidden の枠まで動かしてしまうので使わない。"""
+    if view is None or e is None or not e.offsetHeight:
+        return
+    _, vy, _, _ = _dom.rect(view)
+    _, ey, _, eh = _dom.rect(e)
+    top = vy + float(view.clientTop or 0)
+    bottom = top + float(view.clientHeight or 0)
+    if ey < top:
+        view.scrollTop = float(view.scrollTop) - (top - ey)
+    elif ey + eh > bottom:
+        view.scrollTop = float(view.scrollTop) + min(ey + eh - bottom, ey - top)
 
 
 # ================= 木 =================
@@ -1056,7 +1101,7 @@ class QTreeWidget(QAbstractItemView):
     def scrollToItem(self, item, *_a):
         e = self._item_els.get(id(item))
         if e is not None:
-            e.scrollIntoView(_block_nearest())
+            _scroll_into(self._view, e)
 
     def itemAt(self, *args):
         p = args[0] if len(args) == 1 else QPoint(*args)
@@ -1220,6 +1265,8 @@ class QTreeWidget(QAbstractItemView):
         items = self._visible_items()
         if not items or key not in ("ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"):
             return
+        if ev.altKey or ev.metaKey or ev.ctrlKey:
+            return   # ⌥← などは戻る・進むなどのショートカットに任せる
         ev.preventDefault()
         cur = self._current if self._current in items else None
         if key in ("ArrowLeft", "ArrowRight") and cur is not None:
@@ -1228,8 +1275,11 @@ class QTreeWidget(QAbstractItemView):
             return
         i = items.index(cur) if cur is not None else -1
         i = min(len(items) - 1, i + 1) if key == "ArrowDown" else max(0, i - 1)
-        self._anchor = items[i]
-        self._set_selection([items[i]], items[i])
+        if self.selectionMode() == QAbstractItemView.SelectionMode.NoSelection:
+            self._set_selection(list(self._selected), items[i])   # 選ばずに、今の項目だけ動かす
+        else:
+            self._anchor = items[i]
+            self._set_selection([items[i]], items[i])
         _dom.later(0, lambda: self.scrollToItem(items[i]))
 
 
@@ -1776,7 +1826,7 @@ class _CompleterPopup:
         for i in range(rows.length):
             rows.item(i).classList.toggle("selected", i == k)
         if 0 <= k < rows.length:
-            rows.item(k).scrollIntoView(_block_nearest())
+            _scroll_into(self._el, rows.item(k))
         self._index = k
 
     def _handle_key(self, ev) -> bool:

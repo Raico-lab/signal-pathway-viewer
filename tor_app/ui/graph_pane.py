@@ -642,7 +642,7 @@ class GraphPane(QFrame):
 
     # 経路の表示経路（左の「経路」タブで選ぶ）: キー → (表示名, 説明, 基準の遺伝子が必須か)
     RELATION_MODES = {
-        "off": ("OFF", "経路を表示しない。普段の地図です", False),
+        "off": ("なし", "経路を表示しない。普段の地図です", False),
         "all": ("すべての経路", "チェックした遺伝子どうしを、指定の段数で結ぶすべての経路。各段の矢印の向きは問わず、"
                 "A → X ← B のように共通の標的を経由する経路も含む", False),
         "direct": ("矢印の向きにたどれる経路", "チェックした遺伝子から、別のチェックした遺伝子へ矢印の向きにたどれる経路。"
@@ -704,11 +704,10 @@ class GraphPane(QFrame):
                          "anchor_node": anchor if anchor in pids else None, "sel_nodes": set(), "sel_edges": set()}
         self._push_relation()
 
-        # 経路の本数は「経路」タブの「表示経路」の見出しに出す（relation_count）。ここでは共通の遺伝子などだけ
+        # 経路の本数は「経路」タブの一覧の各段に出す。ここでは共通の遺伝子・打ち切りなどだけ（使い方は Help に）
         lines = []
         if result.truncated:
-            lines.append(f"経路が {relation_paths.TOTAL_CAP} 本を超えたので、そこで一覧を打ち切りました。"
-                         "段数を減らすか、選ぶ遺伝子を絞ってください")
+            lines.append(f"経路が {relation_paths.TOTAL_CAP} 本を超えたので、そこで一覧を打ち切りました")
         if result.capped:
             lines.append(f"{relation_paths.ENUM_CAP} 本に達して数えるのをやめた組が {result.capped} 組あります")
         if mode in ("regulators", "targets"):

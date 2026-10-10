@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from PyQt6.QtCore import QObject, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QColor, QDesktopServices, QFont, QFontMetrics, QKeySequence, QShortcut
-from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QSizePolicy, QButtonGroup, QCheckBox, QComboBox, QFrame, QGroupBox, QToolButton, QHBoxLayout, QLabel, QLineEdit,
+from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QSizePolicy, QButtonGroup, QCheckBox, QComboBox, QHBoxLayout, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QPushButton, QRadioButton, QScrollArea, QSpinBox, QSplitter, QStyle,
                              QStyledItemDelegate, QTabWidget, QTextBrowser, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
 
@@ -263,8 +263,8 @@ class NetworkTab(QWidget):
                 ko = next((p.gene_name for p in self.model.proteins.values()
                            if (p.standard_name or "").upper() == strain), None)
                 label = f"{expression.DELETION_KINDS[dkind]}・{self.del_strain_combo.currentText()} 破壊株"
-                note = ("野生型との log2 比（Deleteome）。白は測って大きく変わらなかった遺伝子" if dkind == "del_mrna" else
-                        "野生型との logFC（Bodenmiller 2010）。報告された部位のうち変化の最も大きいもの。灰は報告なし")
+                # 凡例の小見出し（白・灰の意味などは Help に書く）
+                note = "log2 比（Deleteome）" if dkind == "del_mrna" else "logFC（Bodenmiller 2010）"
                 self._data_cache = (key, f"app.setDataValues({json.dumps(by_gene, ensure_ascii=False)}, "
                                          f"{json.dumps(label, ensure_ascii=False)}, {json.dumps(note, ensure_ascii=False)}, "
                                          f"{json.dumps(ko, ensure_ascii=False)})")
@@ -1317,121 +1317,143 @@ class NetworkTab(QWidget):
 
     def _build_relation_panel(self) -> QWidget:
         """左の「経路」タブ: 注目・拡張している遺伝子のうちチェックしたものが、どの経路でどう関わるかを一覧にする。
-        一覧の経路を選ぶと地図で強調する（tor_app/relation_paths.py）。"""
+        一覧の経路を選ぶと地図で強調する（tor_app/relation_paths.py）。上の行で表示経路を選び、名前で絞り込む
+        （遺伝子の一覧と経路の一覧の両方）。題名は一覧の外（上）に置く。"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        self.rel_genes_box = QGroupBox("対象の遺伝子")
-        genes_layout = QVBoxLayout(self.rel_genes_box)
-        self.rel_list = QListWidget()
-        # 高さは行数に合わせて固定する（空いた高さに広がらない。表示経路を切り替えて下の一覧が出ても縮まない）
-        self.rel_list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        top_row = QHBoxLayout()
+        self.rel_mode = QComboBox()
+        for key, (label, _desc, _) in GraphPane.RELATION_MODES.items():
+            self.rel_mode.addItem(label, key)
+        # 長い表示名でもタブの幅を広げない（選んだ表示経路の説明は吹き出しに出す）
+        self.rel_mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.rel_mode.setMinimumContentsLength(8)
+        top_row.addWidget(self.rel_mode, 3)
+        self.rel_search = QLineEdit()
+        self.rel_search.setPlaceholderText("名前で絞り込む")
+        self.rel_search.setClearButtonEnabled(True)
+        self.rel_search.setToolTip("遺伝子の一覧と、経路の一覧（その名前を通る経路）を絞り込みます")
+        top_row.addWidget(self.rel_search, 2)
+        layout.addLayout(top_row)
+
+        settings = QHBoxLayout()   # 基準の遺伝子と段数は 1 行に
+        settings.addWidget(QLabel("基準"))
+        self.rel_anchor = QComboBox()
+        self.rel_anchor.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.rel_anchor.setMinimumContentsLength(6)
+        self.rel_anchor.setToolTip("チェックした遺伝子から選びます。選ぶと、基準の遺伝子が端にある経路だけを一覧にします。\n"
+                                   "「基準の遺伝子へ・から作用している経路」では必ず選びます")
+        settings.addWidget(self.rel_anchor, 1)
+        settings.addSpacing(8)
+        settings.addWidget(QLabel("段数"))
+        self.rel_steps = QSpinBox()
+        self.rel_steps.setRange(1, 3)
+        self.rel_steps.setValue(1)
+        self.rel_steps.setToolTip("段数がちょうどこの数の経路だけを一覧にします。1 なら直接の関係です。複合体は 1 つとして数えます")
+        settings.addWidget(self.rel_steps)
+        layout.addLayout(settings)
+
+        # 対象の遺伝子: 注目・拡張の群に分け、名前の順（群のチェックで中の遺伝子をまとめて切り替える）
+        layout.addWidget(self._relation_title("遺伝子"))
+        self.rel_list = self._condition_tree(start_open=True)
+        self.rel_list.setMinimumHeight(100)
+        self.rel_list.setMaximumHeight(200)
+        self.rel_list.setToolTip("経路を調べる遺伝子をチェックします（操作中の表示枠で注目・拡張している遺伝子）")
         self.rel_list.itemChanged.connect(self._on_relation_item_changed)
+        layout.addWidget(self.rel_list)
         check_all = QPushButton("すべて選択")
-        check_all.setToolTip("一覧の遺伝子をすべてチェックします")
+        check_all.setToolTip("一覧の遺伝子（絞り込み中は見えているもの）をすべてチェックします")
         check_all.clicked.connect(self._check_all_relation_genes)
         clear = QPushButton("すべて解除")
         clear.clicked.connect(self._clear_relation_checks)
         buttons = QHBoxLayout()
         buttons.addWidget(check_all)
         buttons.addWidget(clear)
-        for w in (self.rel_list,):
-            genes_layout.addWidget(w)
-        genes_layout.addLayout(buttons)
+        layout.addLayout(buttons)
         self._rel_checked: list[int] = []   # 一覧でチェックした遺伝子（チェックした順）
+        self._rel_check_pending = False
 
-        settings = QHBoxLayout()
-        settings.addWidget(QLabel("基準の遺伝子:"))
-        self.rel_anchor = QComboBox()
-        self.rel_anchor.setToolTip("チェックした遺伝子から選びます。選ぶと、基準の遺伝子が端にある経路だけを一覧にします。\n"
-                                   "「基準の遺伝子へ・から作用している経路」では必ず選びます")
-        settings.addWidget(self.rel_anchor, 1)
-        steps_row = QHBoxLayout()
-        steps_row.addWidget(QLabel("経路の段数:"))
-        self.rel_steps = QSpinBox()
-        self.rel_steps.setRange(1, 3)
-        self.rel_steps.setValue(1)
-        self.rel_steps.setToolTip("段数がちょうどこの数の経路だけを一覧にします。1 なら直接の関係です。複合体は 1 つとして数えます")
-        steps_row.addWidget(self.rel_steps)
-        steps_row.addWidget(QLabel("段"))
-        steps_row.addStretch(1)
-
-        modes_box = self.rel_modes_box = QGroupBox("表示経路")
-        self.rel_modes_layout = QVBoxLayout(modes_box)
-        self.rel_mode_group = QButtonGroup(self)
-        self._rel_mode_buttons: dict[str, QRadioButton] = {}
-        for key, (label, desc, _) in GraphPane.RELATION_MODES.items():
-            rb = QRadioButton(label)
-            rb.setToolTip(desc)
-            rb.setProperty("mode", key)
-            rb.setChecked(key == "off")
-            self.rel_mode_group.addButton(rb)
-            self.rel_modes_layout.addWidget(rb)
-            self._rel_mode_buttons[key] = rb
-        # 経路の一覧（選んだ表示経路の下に出す）: 同じ上流ごとにまとめ、開くと経路が並ぶ
+        # 経路の一覧（いつも同じ位置）: 同じ上流ごとにまとめ、開くと経路が並ぶ
         self.rel_paths_box = QWidget()
         paths_layout = QVBoxLayout(self.rel_paths_box)
-        paths_layout.setContentsMargins(4, 2, 0, 6)
-        self.rel_result = QLabel()
+        paths_layout.setContentsMargins(0, 0, 0, 0)
+        paths_layout.addWidget(self._relation_title("経路"))
+        self.rel_result = QLabel()   # 共通の遺伝子・打ち切りなどの結果
         self.rel_result.setWordWrap(True)
+        self.rel_result.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.rel_result.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.rel_path_filter = QLabel()
+        self.rel_result.hide()
+        self.rel_path_filter = QLabel()   # 地図でクリックした遺伝子で絞っているとき
         self.rel_path_filter.setWordWrap(True)
-        self.rel_path_filter.setStyleSheet("color:#00695c;")
+        self.rel_path_filter.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.rel_path_filter.hide()
         self.rel_tree = QTreeWidget()
         self.rel_tree.setHeaderHidden(True)
         self.rel_tree.setMinimumHeight(260)
         self.rel_tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        # 長い経路は右端を省いて 1 行に収める（全体は吹き出しに出す）。横には広げない
+        self.rel_tree.setTextElideMode(Qt.TextElideMode.ElideRight)
+        self.rel_tree.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.rel_tree.header().setStretchLastSection(True)
         self.rel_tree.setToolTip("経路を選ぶと地図で強調します。上流や「上流 … 行き先」の組を選ぶと、その中の経路をすべて強調します。\n"
                                  "記号: → 促進、⊣ 抑制、◇ 作用不明。← ⊢ は右から左への矢印。P・Tx などは関係の種類")
         self.rel_tree.itemSelectionChanged.connect(self._on_relation_path_selected)
         self.rel_tree.itemExpanded.connect(self._fill_group)
-        for w in (self.rel_path_filter, self.rel_tree):
+        self.rel_tree.itemClicked.connect(self._on_relation_tree_clicked)
+        for w in (self.rel_result, self.rel_path_filter):
             paths_layout.addWidget(w)
-        self.rel_paths_box.hide()
+        paths_layout.addWidget(self.rel_tree, 1)
+        layout.addWidget(self.rel_paths_box, 1)
         self._rel_filter_unit: int | None = None   # 地図でクリックして一覧を絞っている単位
+        self._rel_sel_serial = 0      # 一覧の選択が変わった回数（選んだ経路をもう一度押したかを見分ける）
+        self._rel_click_serial = -1
+        self._rel_detail_shown = False   # 右側の説明欄に、選んだ経路の説明を出しているか
 
-        self.rel_window_button = QPushButton("強調中の遺伝子を新しい枠で開く")
+        self.rel_window_button = QPushButton("新しい枠で開く")
         self.rel_window_button.setToolTip("いま経路タブで強調している遺伝子だけを新しい表示枠に描きます。一覧で経路を選んでいなければ、チェックした遺伝子を描きます。\n"
                                           "その枠の「再配置」は、開いたときの遺伝子の組に戻して配置し直します")
         self.rel_window_button.setEnabled(False)
         self.rel_window_button.clicked.connect(lambda: self.open_relation_pane())
-        layout.addWidget(self.rel_genes_box)
-        layout.addLayout(settings)
-        layout.addLayout(steps_row)
-        # 共通の遺伝子などの結果は、表示経路の枠のすぐ下に出す
-        for w in (modes_box, self.rel_result, self.rel_window_button):
-            layout.addWidget(w)
-        layout.addStretch(1)
+        layout.addWidget(self.rel_window_button)
         layout.addWidget(self.help_button("relation"))
         # 設定を変えたらすぐ反映する（続けて変えたときは最後の設定だけ計算する）
         self._rel_timer = QTimer(self)
         self._rel_timer.setSingleShot(True)
         self._rel_timer.setInterval(200)
         self._rel_timer.timeout.connect(self.apply_relation)
-        self.rel_mode_group.buttonToggled.connect(lambda _b, on: on and self._on_relation_setting_changed())
+        self._rel_search_timer = QTimer(self)   # 絞り込みも、打ち終わってから一覧に反映する
+        self._rel_search_timer.setSingleShot(True)
+        self._rel_search_timer.setInterval(150)
+        self._rel_search_timer.timeout.connect(self._on_relation_search)
+        self.rel_search.textChanged.connect(lambda _t: self._rel_search_timer.start())
+        self.rel_mode.currentIndexChanged.connect(lambda _i: self._on_relation_setting_changed())
         self.rel_anchor.currentIndexChanged.connect(lambda _i: self._rel_timer.start())
         self.rel_steps.valueChanged.connect(lambda _v: self._rel_timer.start())
         scroll = QScrollArea()
         scroll.setWidget(panel)
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._update_relation_mode_tip()
         self._update_relation_genes()
         return scroll
 
+    @staticmethod
+    def _relation_title(text: str) -> QLabel:
+        """経路タブの一覧の題名（一覧の外、上に置く）。"""
+        head = QLabel(text)
+        head.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        return head
+
     def _relation_mode(self) -> str:
-        button = self.rel_mode_group.checkedButton()
-        return button.property("mode") if button else "off"
+        return self.rel_mode.currentData() or "off"
+
+    def _update_relation_mode_tip(self) -> None:
+        """表示経路の選択欄の吹き出しを、選んでいる表示経路の説明にする。"""
+        self.rel_mode.setToolTip(GraphPane.RELATION_MODES.get(self._relation_mode(), ("", ""))[1])
 
     def _update_relation_controls(self) -> None:
-        mode = self._relation_mode()   # 基準の遺伝子・段数は、表示経路によらずいつでも選べる
-        # 経路の一覧を、選んだ表示経路のすぐ下に移す
-        self.rel_modes_layout.removeWidget(self.rel_paths_box)
-        if mode == "off":
-            self.rel_paths_box.hide()
-            return
-        index = self.rel_modes_layout.indexOf(self._rel_mode_buttons[mode])
-        self.rel_modes_layout.insertWidget(index + 1, self.rel_paths_box)
-        self.rel_paths_box.show()
+        """基準の遺伝子・段数は、表示経路によらずいつでも選べる。経路の一覧はいつも同じ位置に出す。"""
+        self._update_relation_mode_tip()
 
     def _on_relation_setting_changed(self) -> None:
         self._update_relation_controls()
@@ -1444,35 +1466,63 @@ class NetworkTab(QWidget):
         ids = list(dict.fromkeys(pane.focus_ids() + [g for g in pane.grown_order if g in pane.grown]))
         return [p for p in ids if p in self.model.proteins]
 
+    def _relation_gene_items(self) -> list[QTreeWidgetItem]:
+        """「経路」タブの遺伝子の一覧の遺伝子の項目（群の中の項目）。"""
+        out = []
+        for i in range(self.rel_list.topLevelItemCount()):
+            group = self.rel_list.topLevelItem(i)
+            out += [group.child(j) for j in range(group.childCount())]
+        return out
+
     def _update_relation_genes(self) -> None:
-        """「経路」タブの一覧を、操作中の表示枠の注目・拡張している遺伝子に合わせる（チェックはそこにあるものだけ残す）。"""
-        nodes = self._relation_targets(self.active_pane)
+        """「経路」タブの一覧を、操作中の表示枠の注目・拡張している遺伝子に合わせる（チェックはそこにあるものだけ残す）。
+        注目・拡張の群に分けて名前の順に並べる（なければ空の一覧）。"""
+        pane = self.active_pane
+        nodes = self._relation_targets(pane)
         allowed = set(nodes)
         checked = [p for p in self._rel_checked if p in allowed]
         changed = checked != self._rel_checked
         self._rel_checked = checked
-        self.rel_list.blockSignals(True)
-        self.rel_list.clear()
-        for n in nodes:
-            pane = self.active_pane
-            # 注目・拡張の区別は文字の色で（地図の印と同じ: 注目＝橙、拡張＝紫）
-            item = QListWidgetItem(self.model.names[n])
-            item.setForeground(QColor("#e65100" if n in pane.focus_ids() else "#6a1b9a"))
-            item.setData(Qt.ItemDataRole.UserRole, n)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setCheckState(Qt.CheckState.Checked if n in checked else Qt.CheckState.Unchecked)
-            self.rel_list.addItem(item)
-        if not nodes:
-            item = QListWidgetItem("地図で遺伝子に注目・拡張すると、ここに並びます")
-            item.setFlags(Qt.ItemFlag.NoItemFlags)
-            self.rel_list.addItem(item)
-        self.rel_list.blockSignals(False)
-        rows = max(3, min(10, self.rel_list.count()))   # 3〜10 行分（それより多ければスクロール）
-        self.rel_list.setFixedHeight(self.rel_list.sizeHintForRow(0) * rows + 2 * self.rel_list.frameWidth() + 4)
+        tree = self.rel_list
+        tree.blockSignals(True)
+        tree.clear()
+        if nodes:
+            focus = set(pane.focus_ids())
+            names = self.model.names
+            for group, pids in (("注目", [n for n in nodes if n in focus]), ("拡張", [n for n in nodes if n not in focus])):
+                if not pids:
+                    continue
+                head = self._group_item(tree, group, len(pids), checkable=True)
+                for n in sorted(pids, key=lambda p: names[p].upper()):
+                    item = QTreeWidgetItem([names[n]])
+                    item.setData(0, Qt.ItemDataRole.UserRole, n)
+                    item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setCheckState(0, Qt.CheckState.Checked if n in checked else Qt.CheckState.Unchecked)
+                    head.addChild(item)
+        tree.blockSignals(False)
+        self._apply_relation_gene_search()
         self._update_relation_checked_label()
         self._update_relation_controls()
         if changed:
             self._rel_timer.start()   # チェックしていた遺伝子が注目・拡張から外れたら、経路を求め直す
+
+    def _apply_relation_gene_search(self) -> None:
+        """遺伝子の一覧を、名前に検索欄の文字を含む遺伝子に絞る（絞っている間は群を開く）。"""
+        words = self.rel_search.text().strip().upper()
+        tree = self.rel_list
+        for i in range(tree.topLevelItemCount()):
+            group = tree.topLevelItem(i)
+            any_shown = False
+            for j in range(group.childCount()):
+                child = group.child(j)
+                shown = not words or words in child.text(0).upper()
+                child.setHidden(not shown)
+                any_shown |= shown
+            group.setHidden(not any_shown)
+            name = group.text(0).split("（")[0]
+            self._cond_applying = True   # 絞り込みで開いた群は、開閉した群として覚えない
+            group.setExpanded(bool(words and any_shown) or name not in tree.toggled)
+            self._cond_applying = False
 
     def _update_relation_checked_label(self) -> None:
         # 基準の遺伝子は、チェックした遺伝子から選ぶ（なしも選べる）
@@ -1486,20 +1536,30 @@ class NetworkTab(QWidget):
             self.rel_anchor.setCurrentIndex(self.rel_anchor.findData(anchor))
         self.rel_anchor.blockSignals(False)
 
-    def _on_relation_item_changed(self, item: QListWidgetItem) -> None:
-        pid = item.data(Qt.ItemDataRole.UserRole)
-        self._rel_checked = [p for p in self._rel_checked if p != pid]
-        if item.checkState() == Qt.CheckState.Checked:
-            self._rel_checked.append(pid)
-        self._update_relation_checked_label()
-        self._rel_timer.start()
+    def _on_relation_item_changed(self, _item: QTreeWidgetItem, _column: int = 0) -> None:
+        """遺伝子のチェックを切り替えた（群のチェックは中の遺伝子をまとめて切り替える。知らせはまとめて 1 回だけ扱う）。"""
+        if self._rel_check_pending:
+            return
+        self._rel_check_pending = True
+        QTimer.singleShot(0, self._apply_relation_checks)
+
+    def _apply_relation_checks(self) -> None:
+        """一覧のチェックを _rel_checked に移す（前からチェックしていたものはその順、新しいものは後ろに一覧の順で）。"""
+        self._rel_check_pending = False
+        now = [it.data(0, Qt.ItemDataRole.UserRole) for it in self._relation_gene_items()
+               if it.checkState(0) == Qt.CheckState.Checked]
+        kept = [p for p in self._rel_checked if p in now]
+        checked = kept + [p for p in now if p not in kept]
+        if checked != self._rel_checked:
+            self._rel_checked = checked
+            self._update_relation_checked_label()
+            self._rel_timer.start()
 
     def _check_all_relation_genes(self) -> None:
-        """一覧の遺伝子をすべてチェックする（チェックした順は一覧の順）。"""
-        for i in range(self.rel_list.count()):
-            item = self.rel_list.item(i)
-            pid = item.data(Qt.ItemDataRole.UserRole)
-            if pid is not None and not item.isHidden() and pid not in self._rel_checked:
+        """一覧の遺伝子（絞り込み中は見えているもの）をすべてチェックする（チェックした順は一覧の順）。"""
+        for item in self._relation_gene_items():
+            pid = item.data(0, Qt.ItemDataRole.UserRole)
+            if not item.isHidden() and not item.parent().isHidden() and pid not in self._rel_checked:
                 self._rel_checked.append(pid)
         self._update_relation_genes()
         self._rel_timer.start()
@@ -1523,8 +1583,6 @@ class NetworkTab(QWidget):
                                                    self.rel_steps.value(), self.rel_anchor.currentData()))
         self.rel_window_button.setEnabled(pane.relation is not None)
         self.rel_result.setVisible(bool(self.rel_result.text()))
-        count = pane.relation_count()
-        self.rel_modes_box.setTitle("表示経路" + (f"　経路 {count} 本" if count is not None else ""))
         self._fill_relation_tree(pane)
 
     def _edge_marks(self) -> dict[tuple[int, int], set[tuple[str, str]]]:
@@ -1545,66 +1603,124 @@ class NetworkTab(QWidget):
     FILLED = Qt.ItemDataRole.UserRole + 2          # 組: 経路の行を作ったか
     CAPPED = Qt.ItemDataRole.UserRole + 3          # 上流・組: 数えるのをやめた（ENUM_CAP に達した）組があるか
     PAIR = Qt.ItemDataRole.UserRole + 4            # 組: (左端, 右端)
+    ORDER = Qt.ItemDataRole.UserRole + 5           # 上流・組: 並びの順（上流は relation_paths.find の順、組は行き先の名前の順）
+    GRAY = Qt.ItemDataRole.UserRole + 6            # 上流・組: 地図でクリックした遺伝子を通る経路がない（灰色にして下へ）
+    HIDE = Qt.ItemDataRole.UserRole + 7            # 上流・組: 名前の絞り込みに合う経路がない（隠す）
 
     def _fill_relation_tree(self, pane: GraphPane) -> None:
         self._rel_filter_unit = None
-        self.rel_path_filter.setText("")
+        self._set_relation_filter_text("")
         self.rel_tree.blockSignals(True)
         self.rel_tree.clear()
         r = pane.relation
         if r and "result" in r:
             graph = r["graph"]
-            by_left: dict[int, list] = {}   # 上流 → その上流からの組（並びは relation_paths.find の順のまま）
+            by_left: dict[int, list] = {}   # 上流 → その上流からの組（上流の並びは relation_paths.find の順のまま）
             for group in r["result"].groups:
                 by_left.setdefault(group.left, []).append(group)
-            for left, groups in by_left.items():
+            for order, (left, groups) in enumerate(by_left.items()):
                 top = QTreeWidgetItem()
                 top.setData(0, self.ALL_ROWS, [row for g in groups for row in g.paths])
                 top.setData(0, self.CAPPED, any(g.total >= relation_paths.ENUM_CAP for g in groups))
                 top.setData(0, self.PAIR, (left, None))
-                for g in groups:
+                top.setData(0, self.ORDER, order)
+                for k, g in enumerate(sorted(groups, key=lambda g: graph.label(g.right).upper())):   # 組は名前の順
                     pair = QTreeWidgetItem()
                     pair.setData(0, self.ALL_ROWS, g.paths)
                     pair.setData(0, self.CAPPED, g.total >= relation_paths.ENUM_CAP)
                     pair.setData(0, self.PAIR, (g.left, g.right))
-                    self._set_pair_rows(pair, graph, g.paths)
+                    pair.setData(0, self.ORDER, k)
                     top.addChild(pair)
-                self._update_top(top, graph)
                 self.rel_tree.addTopLevelItem(top)
-            if self.rel_tree.topLevelItemCount() <= 3:
-                for i in range(self.rel_tree.topLevelItemCount()):
-                    self.rel_tree.topLevelItem(i).setExpanded(True)
+            self._refilter_tree(graph, None)   # 本数の表示と、名前の絞り込み
+            self._expand_few_tops()
         self.rel_tree.blockSignals(False)
+
+    def _expand_few_tops(self) -> None:
+        """見えている上流（灰色でないもの）が 3 つ以下なら開く。"""
+        tops = [t for i in range(self.rel_tree.topLevelItemCount())
+                if not (t := self.rel_tree.topLevelItem(i)).isHidden() and not t.data(0, self.GRAY)]
+        if len(tops) <= 3:
+            for top in tops:
+                top.setExpanded(True)
+
+    def _set_relation_filter_text(self, text: str) -> None:
+        self.rel_path_filter.setText(text)
+        self.rel_path_filter.setVisible(bool(text))
 
     @staticmethod
     def _count_text(shown: int, total: int, capped: bool) -> str:
         count = f"{total} 本以上" if capped else f"{total} 本"
         return f"{shown} 本 / {count}" if shown != total else count
 
-    def _set_pair_rows(self, pair: QTreeWidgetItem, graph, rows: list) -> None:
-        """組（上流 … 行き先）に表示する経路を決める（経路の行は開いたときに作る）。"""
+    def _set_pair_rows(self, pair: QTreeWidgetItem, graph, rows: list, hidden: bool | None = None) -> None:
+        """組（上流 … 行き先）に表示する経路を決める（経路の行は開いたときに作る）。hidden を省くと、経路がなければ隠す。
+        隠さずに経路がない組は灰色にする（地図でクリックした遺伝子を通らない組）。"""
         left, right = pair.data(0, self.PAIR)
         count = self._count_text(len(rows), len(pair.data(0, self.ALL_ROWS)), pair.data(0, self.CAPPED))
-        pair.setText(0, f"{graph.label(left)} … {graph.label(right)}（{count}）")
+        text = f"{graph.label(left)} … {graph.label(right)}（{count}）"
+        pair.setText(0, text)
+        pair.setToolTip(0, text)
         pair.setData(0, self.SHOWN_ROWS, rows)
         pair.setData(0, self.FILLED, False)
+        hidden = not rows if hidden is None else hidden
+        pair.setData(0, self.HIDE, hidden)
+        pair.setData(0, self.GRAY, not rows and not hidden)
+        self._set_gray(pair, not rows and not hidden)
         expanded = pair.isExpanded()
         pair.takeChildren()
         if rows:
             pair.addChild(QTreeWidgetItem(["…"]))   # 開けるようにする仮の行
-        pair.setHidden(not rows)
+        pair.setHidden(hidden)
         if expanded and rows:
             self._fill_group(pair)
 
     def _update_top(self, top: QTreeWidgetItem, graph) -> None:
-        """上流のまとめの表示を、中の組（隠れていないもの）に合わせる。"""
-        pairs = [top.child(k) for k in range(top.childCount()) if not top.child(k).isHidden()]
-        rows = [row for pair in pairs for row in pair.data(0, self.SHOWN_ROWS) or []]
+        """上流のまとめの表示を、中の組に合わせる（組がすべて隠れていれば隠し、経路がなければ灰色）。"""
+        pairs = [top.child(k) for k in range(top.childCount())]
+        rows = [row for pair in pairs if not pair.data(0, self.HIDE) for row in pair.data(0, self.SHOWN_ROWS) or []]
         count = self._count_text(len(rows), len(top.data(0, self.ALL_ROWS)), top.data(0, self.CAPPED))
         left = top.data(0, self.PAIR)[0]
-        top.setText(0, f"{graph.label(left)} から（{count}）")
+        text = f"{graph.label(left)} から（{count}）"
+        top.setText(0, text)
+        top.setToolTip(0, text)
         top.setData(0, self.SHOWN_ROWS, rows)
-        top.setHidden(not rows)
+        hidden = all(pair.data(0, self.HIDE) for pair in pairs)
+        top.setData(0, self.HIDE, hidden)
+        top.setData(0, self.GRAY, not rows and not hidden)
+        self._set_gray(top, not rows and not hidden)
+        top.setHidden(hidden)
+
+    def _reorder_relation_tree(self) -> None:
+        """一覧の上流・組を、灰色のものを下に、それ以外は元の順に並べ直す（並べ直すと開閉・隠すが外れるので、戻す）。"""
+        tree = self.rel_tree
+
+        def key(it):
+            return bool(it.data(0, self.GRAY)), it.data(0, self.ORDER)
+
+        tops = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
+        expanded = {id(it): it.isExpanded() for top in tops
+                    for it in [top] + [top.child(k) for k in range(top.childCount())]}
+        changed = False
+        want = sorted(tops, key=key)
+        if any(a is not b for a, b in zip(want, tops)):
+            changed = True
+            for top in tops:
+                tree.takeTopLevelItem(tree.indexOfTopLevelItem(top))
+            tree.addTopLevelItems(want)
+        for top in want:
+            pairs = [top.child(k) for k in range(top.childCount())]
+            order = sorted(pairs, key=key)
+            if any(a is not b for a, b in zip(order, pairs)):
+                changed = True
+                top.takeChildren()
+                top.addChildren(order)
+        if not changed:
+            return
+        for top in want:
+            for it in [top] + [top.child(k) for k in range(top.childCount())]:
+                it.setHidden(bool(it.data(0, self.HIDE)))
+                it.setExpanded(expanded.get(id(it), False))
 
     def _fill_group(self, item: QTreeWidgetItem) -> None:
         """組を開いたとき、中の経路の行を作る。"""
@@ -1627,6 +1743,7 @@ class NetworkTab(QWidget):
         item.setData(0, self.FILLED, True)
 
     def _on_relation_path_selected(self) -> None:
+        self._rel_sel_serial += 1
         pane = self.active_pane
         if pane is None:
             return
@@ -1642,6 +1759,16 @@ class NetworkTab(QWidget):
                 self._show_paths(rows, pane.relation["graph"])   # 右側の説明欄に、選んだ経路の説明
         else:
             self._relation_unit_rows(pane)   # 選択を外したら、絞り込み中の経路（なければ全体）の表示に戻す
+            if self._rel_detail_shown and self.selected is None:
+                self.show_help("relation")   # 選んでいた経路の説明を残さない
+            self._rel_detail_shown = False
+
+    def _on_relation_tree_clicked(self, item: QTreeWidgetItem, _column: int = 0) -> None:
+        """選んでいる経路（1 つだけ）をもう一度押したら、選択を外す。"""
+        again = self._rel_sel_serial == self._rel_click_serial
+        if again and self.rel_tree.selectedItems() == [item]:
+            self.rel_tree.clearSelection()
+        self._rel_click_serial = self._rel_sel_serial
 
     PATHS_SHOWN = 20   # 説明欄に並べる経路の本数（上の段を選んで多くの経路を選んだとき）
 
@@ -1679,26 +1806,59 @@ class NetworkTab(QWidget):
         self.selected = None
         self._set_controls([])
         self.detail.setHtml(help_text._STYLE + "".join(parts))
+        self._rel_detail_shown = True
 
     def _relation_unit_rows(self, pane: GraphPane) -> None:
         """一覧で何も選んでいないとき: 線は描かない（絞り込み中でも、一覧で選ぶまで描かない）。"""
         pane.highlight_rows([])
 
     def _refilter_tree(self, graph, unit: int | None) -> int:
-        """一覧を unit を通る経路だけに絞る（None なら絞り込みを外す）。表示する経路の本数を返す。"""
+        """一覧を絞る: 名前の絞り込み（検索欄）に合う経路がない組は隠し、unit を通る経路がない組は灰色にして下へ
+        （unit が None なら灰色にしない）。表示する経路の本数を返す。"""
+        words = self.rel_search.text().strip().upper()
+        labels: dict[int, str] = {}
+
+        def hit(row) -> bool:
+            for u in row.nodes:
+                if u not in labels:
+                    labels[u] = graph.label(u).upper()
+                if words in labels[u]:
+                    return True
+            return False
+
         shown = 0
         for i in range(self.rel_tree.topLevelItemCount()):
             top = self.rel_tree.topLevelItem(i)
             for k in range(top.childCount()):
                 pair = top.child(k)
                 rows = pair.data(0, self.ALL_ROWS)
-                self._set_pair_rows(pair, graph, rows if unit is None else [row for row in rows if unit in row.nodes])
+                if words:
+                    rows = [row for row in rows if hit(row)]
+                through = rows if unit is None else [row for row in rows if unit in row.nodes]
+                self._set_pair_rows(pair, graph, through, hidden=not rows)
             self._update_top(top, graph)
             shown += len(top.data(0, self.SHOWN_ROWS))
+        self._reorder_relation_tree()
         return shown
 
+    def _on_relation_search(self) -> None:
+        """検索欄で絞り込む: 遺伝子の一覧と、経路の一覧（その名前を通る経路）。"""
+        self._apply_relation_gene_search()
+        pane = self.active_pane
+        if pane is None or not pane.relation or "graph" not in pane.relation:
+            return
+        self.rel_tree.blockSignals(True)
+        had = bool(self.rel_tree.selectedItems())
+        self.rel_tree.clearSelection()
+        self._refilter_tree(pane.relation["graph"], self._rel_filter_unit)
+        if self.rel_search.text().strip():
+            self._expand_few_tops()
+        self.rel_tree.blockSignals(False)
+        if had:
+            self._on_relation_path_selected()   # 選んでいた経路の強調を外す
+
     def _on_relation_gene(self, pane: GraphPane, pid: int) -> None:
-        """地図の遺伝子をクリックした: 一覧を、その遺伝子（を含む単位）を通る経路だけに絞って強調する。"""
+        """地図の遺伝子をクリックした: その遺伝子（を含む単位）を通る経路を一覧の上に、通らない組は灰色にして下に並べる。"""
         if pane is not self.active_pane or not pane.relation or "graph" not in pane.relation:
             return
         if pane.relation.get("sel_edges"):
@@ -1709,40 +1869,40 @@ class NetworkTab(QWidget):
         self.rel_tree.blockSignals(True)
         self.rel_tree.clearSelection()
         shown = self._refilter_tree(graph, unit)
-        tops = [self.rel_tree.topLevelItem(i) for i in range(self.rel_tree.topLevelItemCount())]
-        if sum(not t.isHidden() for t in tops) <= 3:
-            for top in tops:
-                if not top.isHidden():
-                    top.setExpanded(True)
+        self._expand_few_tops()
         self.rel_tree.blockSignals(False)
         name = graph.label(unit)
-        self.rel_path_filter.setText(f"{name} を通る経路（{shown} 本）" if shown else f"{name} を通る経路はありません")
+        self._set_relation_filter_text(f"{name} を通る経路（{shown} 本）" if shown else f"{name} を通る経路はありません")
         self._relation_unit_rows(pane)
 
     def _on_relation_background(self, pane: GraphPane) -> None:
-        """背景をクリックした: 一覧の絞り込みと選択を外す（地図の強調は地図の側で外れる）。"""
+        """背景をクリックした: 一覧の絞り込み（地図の遺伝子で）と選択を外す（地図の強調は地図の側で外れる）。"""
         if pane is not self.active_pane or not pane.relation or "graph" not in pane.relation:
             return
         filtered = self._rel_filter_unit is not None
         self._rel_filter_unit = None
-        self.rel_path_filter.setText("")
+        self._set_relation_filter_text("")
         self.rel_tree.blockSignals(True)
+        had = bool(self.rel_tree.selectedItems())
         self.rel_tree.clearSelection()
         if filtered:
             self._refilter_tree(pane.relation["graph"], None)
         self.rel_tree.blockSignals(False)
+        if had and self._rel_detail_shown and self.selected is None:
+            self.show_help("relation")
+        self._rel_detail_shown = False
 
     def set_relation_settings(self, genes: list[int], mode: str, steps: int, anchor: int | None) -> None:
         """「経路」タブの設定をまとめて変えて、すぐに反映する（左の「登録」タブから呼び出したとき）。
         チェックは操作中の表示枠で注目・拡張している遺伝子だけ。"""
-        widgets = [self.rel_mode_group, self.rel_steps]
+        widgets = [self.rel_mode, self.rel_steps]
         for w in widgets:
             w.blockSignals(True)
-        for b in self.rel_mode_group.buttons():
-            b.setChecked(b.property("mode") == mode)
+        self.rel_mode.setCurrentIndex(max(0, self.rel_mode.findData(mode)))   # 知らない表示経路なら「なし」
         self.rel_steps.setValue(min(3, max(1, steps)))
         for w in widgets:
             w.blockSignals(False)
+        self._update_relation_mode_tip()
         self._rel_checked = list(genes)
         self._update_relation_genes()   # 注目・拡張していない遺伝子のチェックは外れる
         index = self.rel_anchor.findData(anchor) if anchor is not None else 0
@@ -2126,114 +2286,206 @@ class NetworkTab(QWidget):
             shown |= pane.sub.nodes
         return shown
 
-    # 作用の色はアプリ全体で 促進＝赤・抑制＝青（地図の「線の色: 作用」と同じ。web/network.js の EFFECT_COLORS）
-    TRF_EFFECT = {"activate": ("→", "促進", "#e53935"), "inhibit": ("⊣", "抑制", "#1e88e5"), "none": ("◇", "作用不明", "#757575")}
+    # 作用の見出しの印・名前・色（アプリ全体で 促進＝赤・抑制＝青。地図の「線の色: 作用」と同じ。web/network.js の
+    # EFFECT_COLORS）。作用不明はふだんの色（灰色は「ほかの関係ですでに地図にある」の印に使う）
+    TRF_EFFECT = {"activate": ("→", "促進", "#e53935"), "inhibit": ("⊣", "抑制", "#1e88e5"), "none": ("◇", "作用不明", None)}
+    TRF_GENE_COLOR = {"focus": "#e65100", "grown": "#6a1b9a"}   # 遺伝子の見出し: 注目＝橙・拡張＝紫（地図の印と同じ）
+
+    def _trf_items(self):
+        """TF の一覧の転写因子の項目すべて（遺伝子 → 作用 → 転写因子）。"""
+        for i in range(self.trf_tree.topLevelItemCount()):
+            gene = self.trf_tree.topLevelItem(i)
+            for j in range(gene.childCount()):
+                group = gene.child(j)
+                for k in range(group.childCount()):
+                    yield group.child(k)
 
     def _rebuild_trf_panel(self):
-        """操作中の表示枠で注目（オレンジ）・拡張（紫）している遺伝子ごとに、それを転写制御する転写因子を
-        チェックボックスで並べる。遺伝子ごとに、題名 →「すべて表示」「すべて外す」→ 作用（促進・抑制・作用不明）ごとの
-        開閉できる欄、の順。作用の欄は最初は閉じている（開いた欄は、作り直しても開いたまま）。
-        同じ転写因子が複数の遺伝子の欄にあるときは、チェックが連動する。"""
-        scroll = self.trf_scroll.verticalScrollBar().value()   # 作り直してもスクロール位置を保つ
-        self._clear_layout(self.trf_layout)
-        pane = self.active_pane
-        if not self.model or pane is None:
+        """操作中の表示枠で注目（橙）・拡張（紫）している遺伝子ごとに、それを転写制御する転写因子を一覧にする
+        （遺伝子 → 作用（促進・抑制・作用不明）→ 転写因子。名前の順で、ほかの関係ですでに地図にあるものは灰色にして
+        群の最後へ）。遺伝子の群は最初は開き、作用の群は閉じる（開閉は作り直しても保つ）。群のチェックで中の転写因子を
+        まとめて切り替える。同じ転写因子が複数の遺伝子の群にあるときは、チェックが連動する（⇄）。"""
+        tree = getattr(self, "trf_tree", None)
+        if tree is None:
             return
-        targets = pane.trf_targets()
-        if not targets:
-            self.trf_layout.addWidget(QLabel("注目・拡張している遺伝子がありません"))
-        boxes: dict[int, list[QCheckBox]] = {}   # 転写因子 → 各欄のチェックボックス（連動させる）
-
-        def toggled(pid: int, on: bool):
-            for other in boxes.get(pid, []):
-                other.blockSignals(True)
-                other.setChecked(on)
-                other.blockSignals(False)
-            pane.set_trf([pid], on)
-
+        scroll = tree.verticalScrollBar().value()   # 作り直してもスクロール位置を保つ
+        pane = self.active_pane
+        targets = pane.trf_targets() if self.model and pane is not None else []
+        regs_of = {g: self.model.tx_adjacency.inc.get(g, set()) - {g} for g, _ in targets}
+        times: dict[int, int] = {}   # 転写因子 → 並ぶ遺伝子の数（2 つ以上なら ⇄）
+        for regs in regs_of.values():
+            for n in regs:
+                times[n] = times.get(n, 0) + 1
+        self._trf_gray = {n for n in times if n in pane.sub.nodes and n not in pane.trf} if targets else set()
+        self._trf_syncing = True
+        tree.clear()
+        bold_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsAutoTristate
         for g, kind in targets:
-            regs = self.model.tx_adjacency.inc.get(g, set()) - {g}
-            box = QFrame()
-            box.setFrameShape(QFrame.Shape.StyledPanel)
-            v = QVBoxLayout(box)
-            v.setContentsMargins(6, 4, 6, 4)
-            v.setSpacing(2)
-            title = QLabel(self.model.names[g])   # 題名は遺伝子名だけ（注目＝橙・拡張＝紫の色で区別する）
-            title.setStyleSheet("color: %s; font-weight: bold;" % ("#e65100" if kind == "focus" else "#6a1b9a"))
-            v.addWidget(title)
-            if not regs:
-                note = QLabel("転写因子なし")
-                note.setStyleSheet("color:#777;")
-                v.addWidget(note)
-                self.trf_layout.addWidget(box)
-                continue
-            order = sorted(regs, key=lambda n, g=g: self.model.tx_priority(n, g, regulator=True))
-            buttons = QHBoxLayout()
-            for text, on in (("すべて表示", True), ("すべて外す", False)):
-                b = QPushButton(text)
-                b.setFocusPolicy(Qt.FocusPolicy.NoFocus)   # Space・Enter で意図せず切り替わらないように
-                b.clicked.connect(lambda _, ids=order, on=on: pane.set_trf(ids, on))
-                buttons.addWidget(b)
-            v.addLayout(buttons)
+            regs = regs_of[g]
+            head = self._group_item(tree, self.model.names[g], len(regs), checkable=True)
+            head.setData(0, Qt.ItemDataRole.UserRole, f"g{g}")
+            if regs and regs <= self._trf_gray:
+                self._set_gray(head, True)
+            else:
+                head.setForeground(0, QColor(self.TRF_GENE_COLOR[kind]))
             for effect in ("activate", "inhibit", "none"):
-                members = [n for n in order if self.model.tx_effect.get((n, g), "none") == effect]
+                members = sorted((n for n in regs if self.model.tx_effect.get((n, g), "none") == effect),
+                                 key=lambda n: (n in self._trf_gray, self.model.names[n].upper()))
                 if not members:
                     continue
                 mark, label, color = self.TRF_EFFECT[effect]
-                shown = sum(n in pane.trf for n in members)
-                section, inner = self._trf_section((g, effect), f"{mark} {label}（{len(members)}"
-                                                   + (f"、表示 {shown}" if shown else "") + "）", color)
+                group = QTreeWidgetItem([f"{mark} {label}（{len(members)}）" if len(members) > 1 else f"{mark} {label}"])
+                font = group.font(0)
+                font.setBold(True)
+                group.setFont(0, font)
+                group.setFlags(bold_flags)
+                group.setData(0, Qt.ItemDataRole.UserRole, f"e{g}:{effect}")
+                if all(n in self._trf_gray for n in members):
+                    self._set_gray(group, True)
+                elif color:
+                    group.setForeground(0, QColor(color))
+                head.addChild(group)
                 for n in members:
-                    elsewhere = n in pane.sub.nodes and n not in pane.trf   # 他の関係で既に表示中
-                    shared = sum(n in self.model.tx_adjacency.inc.get(t, set()) for t, _ in targets) > 1
-                    cb = QCheckBox(self.model.names[n] + (" 表示中" if elsewhere else "") + ("  ⇄" if shared else ""))
-                    cb.setStyleSheet(f"QCheckBox {{ color: {color}; font-weight: normal; }}")
-                    cb.setToolTip(self.model.proteins[n].description
-                                  + ("\n⇄ 複数の遺伝子の TF。チェックは連動します" if shared else ""))
-                    cb.setChecked(n in pane.trf or elsewhere)
-                    cb.setEnabled(not elsewhere)
-                    cb.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-                    cb.toggled.connect(lambda on, pid=n: toggled(pid, on))
-                    boxes.setdefault(n, []).append(cb)
-                    inner.addWidget(cb)
-                v.addWidget(section)
-            self.trf_layout.addWidget(box)
-        QTimer.singleShot(0, lambda: self.trf_scroll.verticalScrollBar().setValue(scroll))
+                    gray = n in self._trf_gray
+                    shared = times[n] > 1
+                    item = QTreeWidgetItem([self.model.names[n] + ("  ⇄" if shared else "")])
+                    item.setData(0, Qt.ItemDataRole.UserRole, n)
+                    item.setToolTip(0, self.model.proteins[n].description
+                                    + ("\n⇄ 複数の遺伝子の TF。チェックは連動します" if shared else "")
+                                    + ("\nほかの関係ですでに地図にあります" if gray else ""))
+                    flags = Qt.ItemFlag.ItemIsEnabled
+                    if not gray:
+                        flags |= Qt.ItemFlag.ItemIsUserCheckable
+                    item.setFlags(flags)
+                    item.setCheckState(0, Qt.CheckState.Checked if gray or n in pane.trf else Qt.CheckState.Unchecked)
+                    self._set_gray(item, gray)
+                    group.addChild(item)
+        self._trf_syncing = False
+        self._apply_trf_search()
+        self._refill_trf_shown()
+        QTimer.singleShot(0, lambda: tree.verticalScrollBar().setValue(scroll))
 
-    def _trf_section(self, key, title: str, color: str) -> tuple[QWidget, QVBoxLayout]:
-        """TFs 一覧の、開閉できる欄（見出しのボタン＋中身）。key は開閉の状態を覚える鍵（遺伝子・作用）。
-        返り値: (欄, 中身を入れる並び)。"""
-        opened = getattr(self, "_trf_open", set())
-        self._trf_open = opened
-        box = QWidget()
-        outer = QVBoxLayout(box)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
-        head = QToolButton()
-        head.setText(title)
-        head.setCheckable(True)
-        head.setChecked(key in opened)
-        head.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        head.setArrowType(Qt.ArrowType.DownArrow if key in opened else Qt.ArrowType.RightArrow)
-        head.setAutoRaise(True)
-        head.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        head.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        head.setStyleSheet("QToolButton { color: %s; font-weight: bold; text-align: left; border: none; }" % color)
-        body = QWidget()
-        body.setVisible(key in opened)
-        v = QVBoxLayout(body)
-        v.setContentsMargins(18, 0, 0, 2)
-        v.setSpacing(1)
+    def _apply_trf_search(self) -> None:
+        """TF の一覧を、名前に検索欄の文字を含む転写因子に絞る（遺伝子の名前に含むなら遺伝子ごと残す）。
+        絞っている間は群を開く。"""
+        words = self.trf_search.text().strip().lower()
+        self._trf_applying = True
+        for i in range(self.trf_tree.topLevelItemCount()):
+            gene = self.trf_tree.topLevelItem(i)
+            key = gene.data(0, Qt.ItemDataRole.UserRole)
+            gene_hit = not words or words in gene.text(0).split("（")[0].lower()
+            gene_any = gene_hit
+            for j in range(gene.childCount()):
+                group = gene.child(j)
+                any_shown = False
+                for k in range(group.childCount()):
+                    item = group.child(k)
+                    pid = item.data(0, Qt.ItemDataRole.UserRole)
+                    shown = gene_hit or words in self.model.names.get(pid, "").lower()
+                    item.setHidden(not shown)
+                    any_shown |= shown
+                group.setHidden(not any_shown)
+                gene_any |= any_shown
+                group.setExpanded(bool(words and any_shown)
+                                  or group.data(0, Qt.ItemDataRole.UserRole) in self._trf_open)
+            gene.setHidden(not gene_any)
+            gene.setExpanded(bool(words and gene_any) or key not in self._trf_open)
+        self._trf_applying = False
 
-        def toggle(on: bool):
-            body.setVisible(on)
-            head.setArrowType(Qt.ArrowType.DownArrow if on else Qt.ArrowType.RightArrow)
-            (opened.add if on else opened.discard)(key)
+    def _remember_trf_open(self, item, opened: bool) -> None:
+        """開閉した群を覚える（遺伝子は閉じたもの、作用は開いたもの。既定から変えた群だけ）。"""
+        if self._trf_applying or not item.childCount():
+            return
+        key = item.data(0, Qt.ItemDataRole.UserRole)
+        if not isinstance(key, str):
+            return
+        default = key.startswith("g")
+        (self._trf_open.add if opened != default else self._trf_open.discard)(key)
 
-        head.toggled.connect(toggle)
-        outer.addWidget(head)
-        outer.addWidget(body)
-        return box, v
+    def _on_trf_item_changed(self, _item, _column: int = 0) -> None:
+        """TF の一覧のチェックを切り替えた（群のチェックは中の転写因子をまとめて切り替える。知らせはまとめて 1 回だけ扱う）。"""
+        if self._trf_syncing:
+            return
+        self._trf_just_checked = True
+        if self._trf_pending:
+            return
+        self._trf_pending = True
+        QTimer.singleShot(0, self._apply_trf_checks)
+
+    def _apply_trf_checks(self) -> None:
+        """チェックが地図（pane.trf）と違う転写因子を、地図に出す・消す。灰色（ほかの関係ですでに地図にある）は扱わない。"""
+        self._trf_pending = False
+        self._trf_just_checked = False
+        pane = self.active_pane
+        if pane is None:
+            return
+        on, off = set(), set()
+        for item in self._trf_items():
+            pid = item.data(0, Qt.ItemDataRole.UserRole)
+            if pid in self._trf_gray:
+                continue
+            checked = item.checkState(0) == Qt.CheckState.Checked
+            if checked != (pid in pane.trf):
+                (on if checked else off).add(pid)
+        if on:
+            pane.set_trf(sorted(on), True)
+        if off - on:
+            pane.set_trf(sorted(off - on), False)
+        self._sync_trf_checks()
+
+    def _sync_trf_checks(self) -> None:
+        """TF の一覧のチェックを地図にそろえる（複数の遺伝子の群にある転写因子の連動、灰色はチェックしたまま）。"""
+        pane = self.active_pane
+        if pane is None:
+            return
+        self._trf_syncing = True
+        for item in self._trf_items():
+            pid = item.data(0, Qt.ItemDataRole.UserRole)
+            want = Qt.CheckState.Checked if pid in self._trf_gray or pid in pane.trf else Qt.CheckState.Unchecked
+            if item.checkState(0) != want:
+                item.setCheckState(0, want)
+        self._trf_syncing = False
+
+    def _set_all_trf(self, on: bool) -> None:
+        """「すべて選択」「すべて解除」: 操作中の表示枠の一覧の転写因子を、まとめて地図に出す・消す。"""
+        pane = self.active_pane
+        if pane is None or not self.model:
+            return
+        if on:
+            ids = sorted({item.data(0, Qt.ItemDataRole.UserRole) for item in self._trf_items()} - self._trf_gray)
+            if ids:
+                pane.set_trf(ids, True)
+        elif pane.trf:
+            pane.set_trf(sorted(pane.trf), False)
+
+    def _on_trf_item_clicked(self, item, _column: int = 0) -> None:
+        """転写因子の行を押した（チェック以外）: その転写因子の説明を右側に出す。"""
+        if self._trf_just_checked:   # チェックを押した（説明は出さない）
+            self._trf_just_checked = False
+            return
+        pid = item.data(0, Qt.ItemDataRole.UserRole)
+        if isinstance(pid, int) and self.model and pid in self.model.proteins:
+            self.show_node(pid, self.active_pane)
+
+    def _refill_trf_shown(self) -> None:
+        """「今の地図の TF」: 操作中の表示枠で地図に出している転写因子（名前の順）。"""
+        pane = self.active_pane
+        names = self.model.names if self.model else {}
+        shown = sorted(((names[n], n) for n in (pane.trf if pane is not None else ()) if n in names),
+                       key=lambda t: t[0].upper())
+        self.trf_shown.clear()
+        for name, pid in shown:
+            item = QListWidgetItem(name)
+            item.setData(Qt.ItemDataRole.UserRole, pid)
+            self.trf_shown.addItem(item)
+        self.trf_shown_head.setText(f"今の地図の TF（{len(shown)}）" if len(shown) > 1 else "今の地図の TF")
+        row = self.trf_shown.sizeHintForRow(0) if shown else 0
+        self.trf_shown.setFixedHeight(min(max(len(shown), 3), 8) * (row or 18) + 2 * self.trf_shown.frameWidth() + 4)
+
+    def _on_trf_shown_clicked(self, item) -> None:
+        pid = item.data(Qt.ItemDataRole.UserRole)
+        if pid is not None:
+            self.show_node(pid, self.active_pane)
 
     # ================= 詳細パネル =================
     def _set_controls(self, widgets):

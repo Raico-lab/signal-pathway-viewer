@@ -29,6 +29,7 @@ class QMenu(QWidget):
         self._menu_title = title
         self._opener = None
         self._outside = None
+        self._esc = None
         super().__init__(parent, Qt.WindowType.Popup)
         self._window_flag = True
         self._el.classList.add("qmenu")
@@ -127,6 +128,16 @@ class QMenu(QWidget):
         if self._outside is None:
             self._outside = create_proxy(outside)
             _dom.later(0, lambda: _dom.document.addEventListener("mousedown", self._outside, True))
+
+        # Esc で閉じる（メニューの中の部品が先に使ったキーは除く）。ダイアログより先に受け取る
+        def escape(ev):
+            if str(ev.key) == "Escape" and not ev.defaultPrevented and self._top_shown:
+                ev.preventDefault()
+                self.hide()
+
+        if self._esc is None:
+            self._esc = create_proxy(escape)
+            _dom.document.addEventListener("keydown", self._esc)
         _visibility_changed()
 
     def exec(self, pos=None, *_a):
@@ -148,6 +159,10 @@ class QMenu(QWidget):
             _dom.document.removeEventListener("mousedown", self._outside, True)
             self._outside.destroy()
             self._outside = None
+        if self._esc is not None:
+            _dom.document.removeEventListener("keydown", self._esc)
+            self._esc.destroy()
+            self._esc = None
         self.aboutToHide.emit()
         _visibility_changed()
 
@@ -332,6 +347,26 @@ class QMainWindow(QWidget):
 
 
 # ================= ダイアログ =================
+_OPEN_DIALOGS: list = []   # 開いているダイアログ（開いた順）
+_DIALOG_ESC = None
+
+
+def _dialog_escape(ev):
+    # メニューや入力欄が先に使った Esc（defaultPrevented）は除く。window で受けるので、document で受けるメニューより後になる
+    if str(ev.key) != "Escape" or ev.defaultPrevented:
+        return
+    while _OPEN_DIALOGS:
+        dialog = _OPEN_DIALOGS[-1]()
+        if dialog is not None and dialog._top_shown:
+            ev.preventDefault()
+            try:
+                dialog.reject()
+            except Exception:  # noqa: BLE001
+                _dom.report()
+            return
+        _OPEN_DIALOGS.pop()
+
+
 class QDialog(QWidget):
     accepted = pyqtSignal()
     rejected = pyqtSignal()
@@ -359,6 +394,13 @@ class QDialog(QWidget):
         frame.style.width = f"{size[0]}px" if size else "auto"
         frame.style.minWidth = self._el.style.minWidth or "320px"
         _dom.later(0, self._center_frame)
+        # Esc で閉じる（reject）。重なっているときは一番上のものだけ
+        _OPEN_DIALOGS.append(weakref.ref(self))
+        global _DIALOG_ESC
+        if _DIALOG_ESC is None:
+            from pyodide.ffi import create_proxy
+            _DIALOG_ESC = create_proxy(_dialog_escape)
+            _dom.window.addEventListener("keydown", _DIALOG_ESC)
 
     def _center_frame(self):
         if self._overlay is None:
@@ -373,6 +415,7 @@ class QDialog(QWidget):
         if self._backdrop is not None:
             self._backdrop.remove()
             self._backdrop = None
+        _OPEN_DIALOGS[:] = [r for r in _OPEN_DIALOGS if r() is not None and r() is not self]
 
     def open(self):
         self.show()
