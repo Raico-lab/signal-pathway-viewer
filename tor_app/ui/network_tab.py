@@ -1622,8 +1622,47 @@ class NetworkTab(QWidget):
                     rows.append(row)
         if rows:
             pane.highlight_rows(rows)
+            if pane.relation and "graph" in pane.relation:
+                self._show_paths(rows, pane.relation["graph"])   # 右側の説明欄に、選んだ経路の説明
         else:
             self._relation_unit_rows(pane)   # 選択を外したら、絞り込み中の経路（なければ全体）の表示に戻す
+
+    PATHS_SHOWN = 20   # 説明欄に並べる経路の本数（上の段を選んで多くの経路を選んだとき）
+
+    def _show_paths(self, rows, graph) -> None:
+        """経路タブの一覧で選んだ経路を、右側の説明欄に出す: 経路ごとに、段ごとの関係（線のリンク・種類・確度）。"""
+        if getattr(self, "_pair_its_model", None) is not self.model:
+            pair_its: dict[tuple[int, int], list] = {}
+            for it in self.model.interactions.values():
+                pair_its.setdefault((it.source_id, it.target_id), []).append(it)
+            self._pair_its, self._pair_its_model = pair_its, self.model
+
+        def step(a: int, b: int, forward: bool) -> tuple[str, list]:
+            src, dst = (a, b) if forward else (b, a)
+            its = [it for x, y in graph.gene_edges(src, dst) for it in self._pair_its.get((x, y), [])]
+            effects = {resolve_effect(it.interaction_type, it.effect) for it in its}
+            mark = "→" if effects == {"activate"} else "⊣" if effects == {"inhibit"} else "─◇"
+            if not forward:
+                mark = {"→": "←", "⊣": "⊢", "─◇": "◇─"}[mark]
+            return mark, its
+
+        parts = [f"<h3 style='margin:0 0 6px 0'>経路{'' if len(rows) == 1 else f' {len(rows)} 本'}</h3>"]
+        for row in rows[:self.PATHS_SHOWN]:
+            steps = [step(row.nodes[i], row.nodes[i + 1], row.forward[i]) for i in range(len(row.nodes) - 1)]
+            title = html.escape(graph.label(row.nodes[0])) + "".join(
+                f" {mark} {html.escape(graph.label(row.nodes[i + 1]))}" for i, (mark, _its) in enumerate(steps))
+            lines = []
+            for _mark, its in steps:
+                for it in sorted(its, key=lambda it: (it.source.gene_name, it.target.gene_name)):
+                    level = self.model.confidence.get(it.id, "U")
+                    lines.append(f"<li>{self._link_edge(it)} <span style='color:#777'>確度 "
+                                 f"{html.escape(confidence.label(level))}</span></li>")
+            parts.append(f"<p style='margin:8px 0 2px 0'><b>{title}</b></p><ul>{''.join(lines)}</ul>")
+        if len(rows) > self.PATHS_SHOWN:
+            parts.append(f"<p style='color:#777'>ほか {len(rows) - self.PATHS_SHOWN} 本</p>")
+        self.selected = None
+        self._set_controls([])
+        self.detail.setHtml(help_text._STYLE + "".join(parts))
 
     def _relation_unit_rows(self, pane: GraphPane) -> None:
         """一覧で何も選んでいないとき: 線は描かない（絞り込み中でも、一覧で選ぶまで描かない）。"""
@@ -2321,7 +2360,7 @@ class NetworkTab(QWidget):
                  f"・{'階層なし' if level is None else f'第{level + 1}階層'}")
         rows = [("Systematic 名", p.standard_name), ("配置の番号", place),
                 ("ORF の確度（SGD）", p.protein_properties)]
-        table = "".join(f"<tr><td style='color:#777;padding-right:8px'>{k}</td><td>{html.escape(v or '')}</td></tr>"
+        table = "".join(f"<tr><td nowrap style='color:#777;padding-right:8px;white-space:nowrap'>{k}</td><td>{html.escape(v or '')}</td></tr>"
                         for k, v in rows)
         hidden = ""
         sub = self._pane(self.detail_pane).sub if self._render_pane else None
@@ -2640,7 +2679,7 @@ class NetworkTab(QWidget):
         # 文献から拾った性質（組む相手・部位など）は、値のあるものだけ
         rows += [(label, html.escape(detail_text(getattr(it, name, "") or ""))) for name, label in DETAILS
                  if getattr(it, name, "")]
-        table = "".join(f"<tr><td style='color:#777;padding-right:8px;vertical-align:top'>{k}</td>"
+        table = "".join(f"<tr><td nowrap style='color:#777;padding-right:8px;vertical-align:top;white-space:nowrap'>{k}</td>"
                         f"<td>{v}</td></tr>" for k, v in rows)
         a, b = it.source.gene_name, it.target.gene_name
         sgd = (f"<p style='font-size:11px;color:#777'>参照データで確かめる: "
