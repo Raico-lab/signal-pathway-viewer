@@ -1356,8 +1356,6 @@ class NetworkTab(QWidget):
         # 対象の遺伝子: 注目・拡張の群に分け、名前の順（群のチェックで中の遺伝子をまとめて切り替える）
         layout.addWidget(self._relation_title("遺伝子"))
         self.rel_list = self._condition_tree(start_open=True)
-        self.rel_list.setMinimumHeight(100)
-        self.rel_list.setMaximumHeight(200)
         self.rel_list.setToolTip("経路を調べる遺伝子をチェックします（操作中の表示枠で注目・拡張している遺伝子）")
         self.rel_list.itemChanged.connect(self._on_relation_item_changed)
         layout.addWidget(self.rel_list)
@@ -1523,6 +1521,10 @@ class NetworkTab(QWidget):
             self._cond_applying = True   # 絞り込みで開いた群は、開閉した群として覚えない
             group.setExpanded(bool(words and any_shown) or name not in tree.toggled)
             self._cond_applying = False
+        # 高さは見えている行数に合わせる（3〜9 行分。多ければスクロール。下の経路の一覧の位置はなるべく動かさない）
+        rows = sum(1 + (group.childCount() if group.isExpanded() else 0)
+                   for i in range(tree.topLevelItemCount()) if not (group := tree.topLevelItem(i)).isHidden())
+        tree.setFixedHeight(max(3, min(9, rows)) * (tree.fontMetrics().height() + 8) + 2 * tree.frameWidth() + 4)
 
     def _update_relation_checked_label(self) -> None:
         # 基準の遺伝子は、チェックした遺伝子から選ぶ（なしも選べる）
